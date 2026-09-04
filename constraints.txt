@@ -1,0 +1,4 @@
+# Protect the working CUDA build. Ultralytics otherwise pulls torch from PyPI,
+# which on Windows is CPU-only, silently disabling GPU training.
+torch==2.11.0+cu128
+torchvision==0.26.0+cu128

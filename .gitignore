@@ -1,0 +1,33 @@
+# Dataset and training artifacts - large, regenerable, or downloadable.
+# Everything needed to reproduce the subset is tracked: the manifests below
+# record exactly which images are used, and the pipeline rebuilds the rest
+# from the BDD100K archive.
+
+# BDD100K archive and extracted imagery
+archive.zip
+data/*
+!data/label_census.json
+!data/source_daytime_clear/
+data/source_daytime_clear/*
+# The subset manifests ARE the reproducibility record - keep them.
+!data/source_daytime_clear/train_images.txt
+!data/source_daytime_clear/val_images.txt
+
+# Training runs: checkpoints, logs, plots
+runs/
+datasets/
+
+# Pretrained weights fetched automatically by Ultralytics
+weights/
+*.pt
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.ipynb_checkpoints/
+
+# OS
+Thumbs.db
+.DS_Store

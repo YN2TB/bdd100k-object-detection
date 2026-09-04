@@ -1,0 +1,18 @@
+# BDD100K source domain: daytime + clear
+# 12,454 train / 1,764 val images, all 1280x720.
+# Class order is fixed by src/bddcv/constants.py DET_CLASSES - do not reorder.
+path: D:/CV/data/source_daytime_clear
+train: images/train
+val: images/val
+
+names:
+  0: pedestrian
+  1: rider
+  2: car
+  3: truck
+  4: bus
+  5: train
+  6: motorcycle
+  7: bicycle
+  8: traffic light
+  9: traffic sign

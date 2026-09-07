@@ -30,20 +30,48 @@ architecture.
 
 ---
 
-## 2. What to copy from the 5060 machine
+## 2. Getting the project onto this machine
 
-Copy these into a fresh project directory. **Do not copy `archive.zip`,
-`data/bdd100k*/`, or `runs/`** — they are large and unnecessary.
+You already have the raw BDD100K archive, so nothing needs to be transferred
+from the other machine. Clone the repo and rebuild the subset locally.
+
+```bash
+git clone https://github.com/YN2TB/bdd100k-object-detection.git
+cd bdd100k-object-detection
+
+# Selects the daytime+clear subset and extracts just those images (~1.1 GB).
+# Also pulls the label JSONs out of the archive if they aren't already present.
+python scripts/prepare_data.py --archive /path/to/your/bdd100k.zip
+
+# Converts to YOLO txt + COCO json from one source pass.
+python scripts/build_labels.py
+```
+
+Expect `prepare_data.py` to take a few minutes and `build_labels.py` about two.
+Then go straight to §4 and verify — do not skip it.
+
+**The subset must match the other machine's exactly.** The manifests
+(`data/source_daytime_clear/{train,val}_images.txt`) are tracked in git as the
+reproducibility record, and `prepare_data.py` compares what it regenerates
+against them. If your archive selects a different set of images it prints:
 
 ```
-scripts/                       # all of it
-src/                           # all of it
-configs/bdd_source.yaml
-constraints.txt
-data/source_daytime_clear/     # ~1.1 GB - images, labels, annotations, manifests
+*** WARNING: regenerated manifest(s) differ from the committed version
 ```
 
-Total ≈ 1.1 GB.
+If you see that, **stop and report it** — a model trained on a different subset
+is not comparable, and the run would otherwise complete looking perfectly fine.
+Run `git diff data/source_daytime_clear/` to see what moved.
+
+**If your BDD100K copy is extracted rather than zipped**, `prepare_data.py`
+needs a zip. Either re-zip it, or ask the other machine for the derived files
+(`labels/`, `annotations/` — 79 MB) plus the images, and skip both commands
+above.
+
+**Required label schema:** the legacy `bdd100k_labels_images_{train,val}.json`.
+If your archive ships the newer `det_{train,val}.json` instead, the script will
+say so and list what it found — report it rather than adapting the parser, since
+the two schemas nest attributes differently.
 
 ---
 

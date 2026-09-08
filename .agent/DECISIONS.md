@@ -30,3 +30,19 @@ Historical checkpoint/log/metadata bytes remain intact; the migration receipt ma
 old paths to new paths. The earlier decision to keep the root handoff is superseded:
 current instructions are in `docs/HANDOFF_3060.md`; `docs/experiments.md` stays verbatim.
 Logic defects found during review are backlog items, not part of this refactor.
+
+## 2026-09-08: Six-model RTX 3060 profiling scope
+
+The approved roster is YOLO11s, YOLO11m, YOLO26s, Faster R-CNN R50-FPN v2,
+RT-DETR-l, and RF-DETR Small. Add all three new candidates in one implementation
+phase. This phase profiles and smoke-tests; it does not start full 50-epoch runs.
+
+The completed RT-DETR-l run remains the baseline and must not be retrained.
+Each backend keeps its native preprocessing and training recipe; comparisons must
+record actual tensor shape, optimizer, augmentation, batch, accumulation, precision,
+and compute cost. Hardware tuning targets maximum stable throughput with at least
+10% total VRAM headroom. Batch is selected before production training and never
+reduced silently within a run. RF-DETR dependencies use a separate environment.
+
+The implementation branch is `codex/add-model-profiling`. Work begins only after
+the user gives a separate start command.

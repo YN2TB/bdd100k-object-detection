@@ -4,6 +4,14 @@ Updated: 2026-09-08
 
 ## Latest work
 
+A repository-scoped Codex and Claude subagent architecture is specified in
+`docs/superpowers/specs/2026-09-08-shared-subagents-and-skills-design.md` and is
+awaiting final user review. It defines explorer, worker, validator, and reviewer
+roles, with a mandatory confirmation gate before delegating difficult or long
+tasks. No agent or skill configuration has been implemented.
+
+Previous completed work remains unchanged:
+
 Artifact organization and the detailed README were committed as `51fd8dc` and
 pushed directly to `origin/main`. The current branch is
 `codex/add-model-profiling`, created from that exact commit.
@@ -36,6 +44,8 @@ usage limits. Detailed logic defects remain deferred by user-approved scope.
 
 ## Next step
 
-Wait for the user's command. When authorized, implement the active plan in order,
-starting with model registry and dependency compatibility checks. Do not launch
-50-epoch runs, retrain RT-DETR-l, regenerate manifests, or rewrite historical logs.
+Ask the user to review the shared subagent design. After approval, create a focused
+implementation plan before adding agent and skill files. The separate six-model
+profiling plan remains approved but must not start without a specific user command.
+Do not launch 50-epoch runs, retrain RT-DETR-l, regenerate manifests, or rewrite
+historical logs.

@@ -46,3 +46,13 @@ reduced silently within a run. RF-DETR dependencies use a separate environment.
 
 The implementation branch is `codex/add-model-profiling`. Work begins only after
 the user gives a separate start command.
+
+## 2026-09-08: Shared subagent architecture
+
+Use repository-scoped native agent definitions for Codex and Claude Code with
+shared, tool-neutral orchestration and experiment-validation skills. The primary
+handles easy, short tasks directly. Before delegating difficult or long work, it
+must ask the user and include recommended roles and models. The specialized roles
+are explorer, worker, validator, and reviewer. The approved model profile and full
+design are in
+`docs/superpowers/specs/2026-09-08-shared-subagents-and-skills-design.md`.

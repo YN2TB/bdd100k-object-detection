@@ -1,7 +1,7 @@
 # BDD100K source domain: daytime + clear
 # 12,454 train / 1,764 val images, all 1280x720.
 # Class order is fixed by src/bddcv/constants.py DET_CLASSES - do not reorder.
-path: D:/CV/data/source_daytime_clear
+path: /media/orlab/437478a6-2666-4549-903d-18e9d7d1c34f/orlab/Quocdat/CV/bdd100k-object-detection/data/source_daytime_clear
 train: images/train
 val: images/val
 

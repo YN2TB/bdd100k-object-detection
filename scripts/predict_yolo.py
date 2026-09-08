@@ -13,6 +13,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
 from bddcv.constants import DATA_DIR  # noqa: E402
+from bddcv.paths import PREDICTIONS_DIR, prepare_ultralytics, resolve_output  # noqa: E402
 from bddcv.evaluation import image_id_map  # noqa: E402
 
 SUBSET = DATA_DIR / "source_daytime_clear"
@@ -22,13 +23,16 @@ IMAGES = SUBSET / "images" / "val"
 if __name__ == "__main__":
     ap = argparse.ArgumentParser()
     ap.add_argument("weights", type=Path)
-    ap.add_argument("--out", type=Path, required=True)
+    ap.add_argument("--out", type=Path, default=None,
+                    help="default: runs/predictions/yolo.json")
     ap.add_argument("--imgsz", type=int, default=640)
     ap.add_argument("--conf", type=float, default=0.001)
     ap.add_argument("--iou", type=float, default=0.7)
     ap.add_argument("--max-det", type=int, default=300)
     ap.add_argument("--device", default="0")
     a = ap.parse_args()
+    a.out = resolve_output(a.out, PREDICTIONS_DIR / "yolo.json")
+    prepare_ultralytics()
 
     from ultralytics import YOLO
 
@@ -38,7 +42,8 @@ if __name__ == "__main__":
 
     stream = model.predict(
         source=str(IMAGES), imgsz=a.imgsz, conf=a.conf, iou=a.iou,
-        max_det=a.max_det, device=a.device, stream=True, verbose=False,
+        max_det=a.max_det, device=a.device, stream=True, verbose=False, save=False,
+        project=str(a.out.parent), name=a.out.stem, exist_ok=True,
     )
     for r in stream:
         name = Path(r.path).name

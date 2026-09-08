@@ -17,49 +17,41 @@ Run it detached, not as a child of an agent session - a session teardown
 otherwise takes the supervisor down with the run it is supervising:
 
     Start-Process python -ArgumentList "-u","scripts/train_with_resume.py",... `
-        -WorkingDirectory D:\CV -RedirectStandardOutput runs/logs/<name>.log `
+        -WorkingDirectory D:\CV -RedirectStandardOutput runs/train/<name>/logs/launcher.log `
         -WindowStyle Hidden
 """
 from __future__ import annotations
 
 import argparse
 import csv
+import json
+import os
 import subprocess
 import sys
 import time
 from datetime import datetime
 from pathlib import Path
 
-PROJECT_ROOT = Path(__file__).resolve().parents[1]
-
-# Ultralytics nests runs under <runs_dir>/detect/<project>/<name>.
-ULTRA_RUNS_ROOT = PROJECT_ROOT / "runs" / "detect" / "runs"
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
+from bddcv.paths import (  # noqa: E402
+    PROJECT_ROOT, DATA_CONFIG, TRAIN_DIR, prepare_runtime, resolve_output, resolve_weights,
+)
 
 DEFAULT_BATCH = {"ultra": 16, "frcnn": 4}
+LOG_PATH: Path | None = None
 
 # RT-DETR needs Ultralytics' RTDETR class, not YOLO; both expose the same
 # .train() interface, so only the constructor differs.
-ULTRA_FRESH = """
-from ultralytics import {cls}
-{cls}('{model}').train(
-    data='configs/bdd_source.yaml', epochs={epochs}, imgsz={imgsz}, batch={batch},
-    amp=True, device=0, workers={workers}, project='runs', name='{name}',
-    exist_ok=True, val=True, plots=True, seed=0,
-)
-"""
-
-ULTRA_RESUME = """
-from ultralytics import {cls}
-{cls}('{last}').train(resume=True)
-"""
-
-
 def ultra_class(model: str) -> str:
     return "RTDETR" if "rtdetr" in Path(model).stem.lower() else "YOLO"
 
 
 def log(msg: str) -> None:
-    print(f"[wrapper {datetime.now():%H:%M:%S}] {msg}", flush=True)
+    line = f"[wrapper {datetime.now():%H:%M:%S}] {msg}"
+    print(line, flush=True)
+    if LOG_PATH:
+        with LOG_PATH.open("a", encoding="utf-8") as fh:
+            fh.write(line + "\n")
 
 
 def epochs_done(results_csv: Path) -> int:
@@ -76,15 +68,18 @@ def epochs_done(results_csv: Path) -> int:
 def build_command(args, resuming: bool) -> list[str]:
     if args.mode == "ultra":
         cls = ultra_class(args.model)
+        model = args.run_dir / "weights/last.pt" if resuming else resolve_weights(args.model)
+        kwargs = ({"resume": True, "save_dir": str(args.run_dir)} if resuming else {
+            "data": str(DATA_CONFIG), "epochs": args.epochs, "imgsz": args.imgsz,
+            "batch": args.batch, "amp": True, "device": 0, "workers": args.workers,
+            "project": str(args.run_dir.parent), "name": args.run_dir.name,
+            "exist_ok": True, "val": True, "plots": True, "seed": 0,
+        })
+        # repr handles spaces, quotes and Windows separators without code injection.
         code = (
-            ULTRA_RESUME.format(
-                cls=cls, last=(args.run_dir / "weights" / "last.pt").as_posix()
-            )
-            if resuming
-            else ULTRA_FRESH.format(
-                cls=cls, model=args.model, epochs=args.epochs, imgsz=args.imgsz,
-                batch=args.batch, workers=args.workers, name=args.name,
-            )
+            f"import sys; sys.path.insert(0, {str(PROJECT_ROOT / 'src')!r})\n"
+            "from bddcv.paths import prepare_ultralytics\nprepare_ultralytics()\n"
+            f"from ultralytics import {cls}\n{cls}({str(model)!r}).train(**{kwargs!r})\n"
         )
         return [sys.executable, "-u", "-c", code]
 
@@ -99,6 +94,7 @@ def build_command(args, resuming: bool) -> list[str]:
 
 
 def main() -> int:
+    global LOG_PATH
     p = argparse.ArgumentParser()
     p.add_argument("mode", choices=["ultra", "yolo", "frcnn"],
                    help="'ultra' drives any Ultralytics model (YOLO, RT-DETR); "
@@ -112,7 +108,8 @@ def main() -> int:
                    help="defaults to 16 for ultra, 4 for frcnn")
     p.add_argument("--imgsz", type=int, default=640, help="ultra only")
     p.add_argument("--workers", type=int, default=4)
-    p.add_argument("--out", type=Path, default=Path("runs/frcnn"), help="frcnn only")
+    p.add_argument("--out", type=Path, default=None,
+                   help="exact run directory; default: runs/train/<name> (frcnn: runs/train/frcnn)")
     p.add_argument("--max-attempts", type=int, default=20)
     p.add_argument("--max-stalls", type=int, default=3,
                    help="consecutive restarts with no epoch completed before giving up")
@@ -127,15 +124,27 @@ def main() -> int:
 
     if args.mode == "ultra":
         args.name = args.name or Path(args.model).stem
-        args.run_dir = ULTRA_RUNS_ROOT / args.name
+        if Path(args.name).name != args.name or args.name in (".", ".."):
+            p.error("--name must be a single directory name; use --out for a path")
+        args.run_dir = resolve_output(args.out, TRAIN_DIR / args.name)
         results_csv = args.run_dir / "results.csv"
         checkpoint = args.run_dir / "weights" / "last.pt"
-        label = f"{args.model} -> runs/detect/runs/{args.name}"
+        label = f"{args.model} -> {args.run_dir}"
     else:
+        args.out = resolve_output(args.out, TRAIN_DIR / "frcnn")
+        args.run_dir = args.out
         results_csv = args.out / "results.csv"
         checkpoint = args.out / "last.pt"
         label = f"faster-rcnn -> {args.out}"
 
+    logs = args.run_dir / "logs"
+    logs.mkdir(parents=True, exist_ok=True)
+    LOG_PATH = logs / "supervisor.log"
+    (logs / "supervisor.pid").write_text(str(os.getpid()) + "\n")
+    (logs / "supervisor_launch.json").write_text(json.dumps({
+        "pid": os.getpid(), "started_at": datetime.now().astimezone().isoformat(),
+        "argv": sys.argv, "run_dir": str(args.run_dir),
+    }, indent=2), encoding="utf-8")
     log(f"supervising {label} (batch {args.batch}, {args.epochs} epochs)")
 
     started_at = time.time()
@@ -151,7 +160,23 @@ def main() -> int:
         verb = f"resuming from epoch {before + 1}" if resuming else "starting fresh"
         log(f"attempt {attempt}/{args.max_attempts}: {verb} ({before}/{args.epochs} done)")
 
-        rc = subprocess.call(build_command(args, resuming), cwd=PROJECT_ROOT)
+        prepare_runtime()
+        args.run_dir.mkdir(parents=True, exist_ok=True)
+        with LOG_PATH.open("a", encoding="utf-8") as output:
+            child = subprocess.Popen(build_command(args, resuming), cwd=PROJECT_ROOT,
+                                     stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+                                     text=True, encoding="utf-8", errors="replace")
+            try:
+                for line in child.stdout:
+                    print(line, end="", flush=True)
+                    output.write(line)
+                    output.flush()
+                rc = child.wait()
+            finally:
+                if child.poll() is None:
+                    child.terminate()
+                    child.wait()
+                child.stdout.close()
         after = epochs_done(results_csv)
         gained = after - before
         elapsed = (time.time() - started_at) / 3600

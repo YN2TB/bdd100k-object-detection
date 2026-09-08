@@ -30,6 +30,7 @@ from torch.utils.data import DataLoader
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
 from bddcv.constants import DATA_DIR  # noqa: E402
+from bddcv.paths import TRAIN_DIR, prepare_runtime, resolve_output  # noqa: E402
 from bddcv.evaluation import evaluate, format_report  # noqa: E402
 from bddcv.frcnn import CocoDetectionDataset, build_model, collate  # noqa: E402
 
@@ -93,11 +94,14 @@ def main() -> None:
     p.add_argument("--lr", type=float, default=0.01)
     p.add_argument("--workers", type=int, default=4)
     p.add_argument("--warmup-iters", type=int, default=500)
-    p.add_argument("--out", type=Path, default=Path("runs/frcnn"))
+    p.add_argument("--out", type=Path, default=None,
+                   help="run directory (default: runs/train/frcnn)")
     p.add_argument("--limit-train", type=int, default=0, help="smoke test on N images")
     p.add_argument("--resume", action="store_true",
                    help="continue from <out>/last.pt, restoring optimizer, scaler and LR position")
     args = p.parse_args()
+    args.out = resolve_output(args.out, TRAIN_DIR / "frcnn")
+    prepare_runtime()
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     args.out.mkdir(parents=True, exist_ok=True)

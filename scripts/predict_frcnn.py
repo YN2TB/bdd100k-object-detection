@@ -15,6 +15,7 @@ from torch.utils.data import DataLoader
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
 from bddcv.constants import DATA_DIR  # noqa: E402
+from bddcv.paths import PREDICTIONS_DIR, prepare_runtime, resolve_output  # noqa: E402
 from bddcv.frcnn import (  # noqa: E402
     CocoDetectionDataset,
     build_model,
@@ -28,10 +29,13 @@ GT = SUBSET / "annotations" / "instances_val.json"
 if __name__ == "__main__":
     ap = argparse.ArgumentParser()
     ap.add_argument("weights", type=Path, help="best.pt from train_frcnn.py")
-    ap.add_argument("--out", type=Path, required=True)
+    ap.add_argument("--out", type=Path, default=None,
+                    help="default: runs/predictions/frcnn.json")
     ap.add_argument("--batch", type=int, default=4)
     ap.add_argument("--workers", type=int, default=4)
     a = ap.parse_args()
+    a.out = resolve_output(a.out, PREDICTIONS_DIR / "frcnn.json")
+    prepare_runtime()
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 

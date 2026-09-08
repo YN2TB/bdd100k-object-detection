@@ -19,6 +19,7 @@ from PIL import Image, ImageDraw
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
 from bddcv.constants import DATA_DIR, DET_CLASSES  # noqa: E402
+from bddcv.paths import VERIFICATION_DIR  # noqa: E402
 
 SUBSET_DIR = DATA_DIR / "source_daytime_clear"
 TOL = 1.0  # pixels; YOLO txt is written at 6dp so round-trip error is sub-pixel
@@ -97,7 +98,8 @@ def montage(split: str, n: int = 6, seed: int = 0) -> Path:
         img = img.resize((tw, th))
         sheet.paste(img, ((k % cols) * tw, (k // cols) * th))
 
-    out = SUBSET_DIR / f"verify_{split}.png"
+    out = VERIFICATION_DIR / f"verify_{split}.png"
+    out.parent.mkdir(parents=True, exist_ok=True)
     sheet.save(out)
     return out
 

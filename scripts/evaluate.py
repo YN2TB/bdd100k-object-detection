@@ -24,5 +24,6 @@ if __name__ == "__main__":
     res = evaluate(a.gt, a.predictions)
     print(format_report(res, a.title or a.predictions.stem))
     if a.save:
+        a.save.parent.mkdir(parents=True, exist_ok=True)
         a.save.write_text(json.dumps(res, indent=2), encoding="utf-8")
         print(f"\nsaved -> {a.save}")

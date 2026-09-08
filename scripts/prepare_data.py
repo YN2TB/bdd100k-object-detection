@@ -10,7 +10,7 @@ the whole 8 GB archive.
 
 Self-contained: the label JSONs are extracted from the archive automatically if
 they are not already present, so a fresh clone plus a BDD100K archive is enough
-to rebuild the subset. Pass --archive if yours is not at ./archive.zip.
+to rebuild the subset. Pass --archive if yours is not at data/archives/archive.zip.
 """
 from __future__ import annotations
 

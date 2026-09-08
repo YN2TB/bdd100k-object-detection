@@ -1,0 +1,3 @@
+# Project-specific Codex overrides only.
+# Shared instructions: ../AGENTS.md; shared state: ../.agent/.
+# No overrides: inherit the user and host configuration.

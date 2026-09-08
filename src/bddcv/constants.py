@@ -4,12 +4,9 @@ The class index order defined here is the contract between the YOLO label
 files, the COCO annotation file, and every results table. Changing it
 invalidates already-converted labels and trained checkpoints.
 """
-from pathlib import Path
+from .paths import ARCHIVE, DATA_DIR, PROJECT_ROOT
 
-PROJECT_ROOT = Path(__file__).resolve().parents[2]
-DATA_DIR = PROJECT_ROOT / "data"
 RAW_LABELS_DIR = DATA_DIR / "labels_raw"
-ARCHIVE = PROJECT_ROOT / "archive.zip"
 
 # Paths inside archive.zip
 ZIP_IMAGE_PREFIX = "bdd100k/bdd100k/images/100k"

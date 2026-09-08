@@ -31,3 +31,6 @@ venv/
 # OS
 Thumbs.db
 .DS_Store
+
+# Personal Claude Code settings
+.claude/settings.local.json

@@ -1,5 +1,10 @@
 # Handoff: RT-DETR training on the RTX 3060
 
+Paths updated on 2026-09-08. See [README](../README.md) for the current layout.
+Migrated historical logs retain their original names (for example `logs/rtdetr.log`);
+new supervisor runs write `logs/supervisor.log`. Historical checkpoint arguments
+and launch metadata retain old paths; use the wrapper with `--out` when resuming.
+
 You are running one arm of a four-model detector comparison. Another machine
 (RTX 5060) is running the other three. **Your job is to train RT-DETR-l for 50
 epochs on the BDD100K daytime+clear subset and send back three files.**
@@ -156,11 +161,7 @@ RT-DETR-l is heavier than YOLO. Confirm it fits in 12 GB before committing to a
 long run.
 
 ```bash
-python -c "
-from ultralytics import RTDETR
-RTDETR('rtdetr-l.pt').train(data='configs/bdd_source.yaml', epochs=1, imgsz=640,
-    batch=8, amp=True, device=0, workers=4, project='runs', name='smoke_rtdetr', exist_ok=True)
-"
+python scripts/smoke_ultra.py --model rtdetr-l.pt --name smoke_rtdetr --batch 8
 ```
 
 This downloads `rtdetr-l.pt` automatically (needs internet) and takes roughly
@@ -172,8 +173,8 @@ This downloads `rtdetr-l.pt` automatically (needs internet) and takes roughly
 - **Record the per-epoch time and peak VRAM.** Report them back; they set the
   ETA and they go in the writeup.
 
-Then delete `runs/detect/runs/smoke_rtdetr/` so it does not get confused with
-the real run.
+Keep the smoke artifacts in `runs/smoke/smoke_rtdetr/`; production artifacts
+are stored separately under `runs/train/rtdetr-l/`. Choose a new smoke name for a retry.
 
 ---
 
@@ -186,21 +187,21 @@ session, which defeated its entire purpose.
 **Windows (PowerShell):**
 
 ```powershell
-New-Item -ItemType Directory -Force runs\logs | Out-Null
+New-Item -ItemType Directory -Force runs\train\rtdetr-l\logs | Out-Null
 Start-Process -FilePath "python" `
   -ArgumentList "-u","scripts/train_with_resume.py","ultra","--model","rtdetr-l.pt","--name","rtdetr-l","--epochs","50","--batch","8" `
   -WorkingDirectory "$PWD" `
-  -RedirectStandardOutput "runs\logs\rtdetr.log" `
-  -RedirectStandardError  "runs\logs\rtdetr.err" `
+  -RedirectStandardOutput "runs\train\rtdetr-l\logs\launcher.log" `
+  -RedirectStandardError  "runs\train\rtdetr-l\logs\launcher.err" `
   -WindowStyle Hidden -PassThru
 ```
 
 **Linux:**
 
 ```bash
-mkdir -p runs/logs
+mkdir -p runs/train/rtdetr-l/logs
 nohup python -u scripts/train_with_resume.py ultra --model rtdetr-l.pt \
-  --name rtdetr-l --epochs 50 --batch 8 > runs/logs/rtdetr.log 2>&1 &
+  --name rtdetr-l --epochs 50 --batch 8 > runs/train/rtdetr-l/logs/launcher.log 2>&1 &
 ```
 
 `train_with_resume.py` supervises the run: if training dies, it relaunches with
@@ -220,8 +221,8 @@ Use `--batch 4` here too if the smoke test needed it.
 ## 7. Monitoring
 
 ```bash
-grep -E "^\[wrapper|ABORT|COMPLETE" runs/logs/rtdetr.log   # restarts and outcome
-tail -3 runs/detect/runs/rtdetr-l/results.csv               # per-epoch metrics
+grep -E "^\[wrapper|ABORT|COMPLETE" runs/train/rtdetr-l/logs/supervisor.log   # restarts and outcome
+tail -3 runs/train/rtdetr-l/results.csv               # per-epoch metrics
 nvidia-smi --query-gpu=utilization.gpu,memory.used,temperature.gpu --format=csv,noheader
 ```
 
@@ -236,9 +237,9 @@ Three files:
 
 | File | Path |
 |---|---|
-| Best checkpoint | `runs/detect/runs/rtdetr-l/weights/best.pt` |
-| Per-epoch metrics | `runs/detect/runs/rtdetr-l/results.csv` |
-| Supervisor log | `runs/logs/rtdetr.log` |
+| Best checkpoint | `runs/train/rtdetr-l/weights/best.pt` |
+| Per-epoch metrics | `runs/train/rtdetr-l/results.csv` |
+| Supervisor log | `runs/train/rtdetr-l/logs/supervisor.log` |
 
 Plus a short note with: peak VRAM, per-epoch time, total wall-clock, and how
 many restarts the wrapper performed.
@@ -263,7 +264,7 @@ must not be quoted.
 | CUDA OOM at start | batch too large for 12 GB | Drop to `--batch 4`, never lower `imgsz` |
 | Dataset not found | `path:` in the yaml still points at `D:/CV` | Fix it (§3) |
 | Fingerprints in §4 don't match | Incomplete or wrong data copy | Stop, re-copy, report |
-| `ABORT: consecutive restarts completed no epoch` | Real failure, not a driver fault | Send `runs/logs/rtdetr.err` |
+| `ABORT: consecutive restarts completed no epoch` | Real failure, not a driver fault | Send `runs/train/rtdetr-l/logs/launcher.err` |
 
 Anything not on this list, or any doubt about whether a deviation is
 acceptable: **ask before proceeding.** A run that completes with the wrong

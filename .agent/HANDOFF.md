@@ -5,10 +5,17 @@ Updated: 2026-09-08
 ## Latest work
 
 A repository-scoped Codex and Claude subagent architecture is specified in
-`docs/superpowers/specs/2026-09-08-shared-subagents-and-skills-design.md` and is
-awaiting final user review. It defines explorer, worker, validator, and reviewer
-roles, with a mandatory confirmation gate before delegating difficult or long
-tasks. No agent or skill configuration has been implemented.
+`docs/superpowers/specs/2026-09-08-shared-subagents-and-skills-design.md` and has
+been approved. Its implementation plan is in
+`docs/superpowers/plans/2026-09-08-shared-subagents-and-skills.md`. It defines
+explorer, worker, validator, and reviewer roles, with a mandatory confirmation
+gate before delegating difficult or long tasks. No agent or skill configuration
+has been implemented.
+
+`.agent/PLANS.md` now records the plan storage convention: the current
+`docs/superpowers/` files are limited to initial repository agent/workflow setup;
+future plans go to `.agent/plans/active/` and move to `.agent/plans/archive/` when
+complete.
 
 Previous completed work remains unchanged:
 
@@ -44,8 +51,8 @@ usage limits. Detailed logic defects remain deferred by user-approved scope.
 
 ## Next step
 
-Ask the user to review the shared subagent design. After approval, create a focused
-implementation plan before adding agent and skill files. The separate six-model
-profiling plan remains approved but must not start without a specific user command.
-Do not launch 50-epoch runs, retrain RT-DETR-l, regenerate manifests, or rewrite
-historical logs.
+Implement the approved shared subagent plan after the user selects inline or
+subagent-driven execution. The current session lacks a spawn tool, so inline
+execution is recommended. The separate six-model profiling plan remains approved
+but must not start without a specific user command. Do not launch 50-epoch runs,
+retrain RT-DETR-l, regenerate manifests, or rewrite historical logs.

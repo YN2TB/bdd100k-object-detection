@@ -1,6 +1,6 @@
 # Shared subagents and skills design
 
-Status: awaiting user review
+Status: approved and implemented
 
 ## Goal
 

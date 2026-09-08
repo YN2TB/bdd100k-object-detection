@@ -56,3 +56,8 @@ must ask the user and include recommended roles and models. The specialized role
 are explorer, worker, validator, and reviewer. The approved model profile and full
 design are in
 `docs/superpowers/specs/2026-09-08-shared-subagents-and-skills-design.md`.
+
+The design is implemented with canonical skills under `.agents/skills/`, native
+Codex agents under `.codex/agents/`, and native Claude agents plus skill routers
+under `.claude/`. Primary model choices remain recommendations; the repository
+sets role-specific subagent models only and leaves context-window settings unset.

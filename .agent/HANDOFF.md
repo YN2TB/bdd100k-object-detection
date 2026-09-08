@@ -4,13 +4,19 @@ Updated: 2026-09-08
 
 ## Latest work
 
-A repository-scoped Codex and Claude subagent architecture is specified in
-`docs/superpowers/specs/2026-09-08-shared-subagents-and-skills-design.md` and has
-been approved. Its implementation plan is in
-`docs/superpowers/plans/2026-09-08-shared-subagents-and-skills.md`. It defines
-explorer, worker, validator, and reviewer roles, with a mandatory confirmation
-gate before delegating difficult or long tasks. No agent or skill configuration
-has been implemented.
+A repository-scoped Codex and Claude subagent architecture is implemented from
+`docs/superpowers/specs/2026-09-08-shared-subagents-and-skills-design.md` and
+`docs/superpowers/plans/2026-09-08-shared-subagents-and-skills.md`. Canonical
+skills live under `.agents/skills/`; native role definitions live under
+`.codex/agents/` and `.claude/agents/`. Claude skill routers live under
+`.claude/skills/`. The roles are explorer, worker, validator, and reviewer, with
+a mandatory confirmation gate before difficult or long delegation.
+
+Verification completed with 16 unit tests passing, both canonical skills passing
+`quick_validate.py`, six Claude agent/skill frontmatter files parsing as YAML, and
+Codex CLI 0.153.1 loading the repository configuration without a syntax error.
+The Conda `python` lacks PyYAML, so skill validation used `/usr/bin/python3`; no
+dependency was installed.
 
 `.agent/PLANS.md` now records the plan storage convention: the current
 `docs/superpowers/` files are limited to initial repository agent/workflow setup;
@@ -51,8 +57,6 @@ usage limits. Detailed logic defects remain deferred by user-approved scope.
 
 ## Next step
 
-Implement the approved shared subagent plan after the user selects inline or
-subagent-driven execution. The current session lacks a spawn tool, so inline
-execution is recommended. The separate six-model profiling plan remains approved
-but must not start without a specific user command. Do not launch 50-epoch runs,
-retrain RT-DETR-l, regenerate manifests, or rewrite historical logs.
+The shared subagent setup is complete. Wait for the user's separate command before
+starting the six-model profiling plan. Do not launch 50-epoch runs, retrain
+RT-DETR-l, regenerate manifests, or rewrite historical logs.

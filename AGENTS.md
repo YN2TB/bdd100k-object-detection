@@ -50,6 +50,14 @@ History contains one descriptive initial commit; no formal message convention is
 - Record durable decisions in `.agent/DECISIONS.md`; move completed plans to `.agent/plans/archive/` and update the index.
 - Keep state tool-neutral: use repository-relative paths and commands, without credentials or machine-local settings.
 
+### Subagent Routing
+
+- Use `$bddcv-orchestration` when classifying work or considering delegation.
+- Handle work directly when it is both easy and short; do not propose a subagent for casual tasks.
+- Before delegating difficult or long work, tell the user the classification, reason, recommended roles and models, execution order, and material actions, then wait for confirmation.
+- Use `bddcv-explorer` for read-heavy mapping, `bddcv-worker` for scoped implementation, `bddcv-validator` for acceptance evidence, and `bddcv-reviewer` for independent review.
+- Keep the primary conversation focused by sending compact task packets and receiving concise evidence summaries.
+
 ## Additional Experiment Contracts
 
 - Domain shift, target-data budgets, and recovery curves belong to a separate project; do not expand this repository into that work.

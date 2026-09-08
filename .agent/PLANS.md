@@ -11,6 +11,11 @@
   move its index entry from Active to Archive.
 - Update this file whenever a plan is created, completed, superseded, or moved.
 
+## Base setup
+
+- [2026-09-08: shared Codex and Claude subagents](../docs/superpowers/plans/2026-09-08-shared-subagents-and-skills.md)
+  — completed; retained under `docs/superpowers/` as the initial agent/workflow setup.
+
 ## Active
 
 - [2026-09-08: six-model profiling and RTX 3060 optimization](plans/active/2026-09-08-six-model-profiling.md)

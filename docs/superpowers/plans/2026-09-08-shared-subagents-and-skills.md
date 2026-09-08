@@ -1,5 +1,7 @@
 # Shared Subagents and Skills Implementation Plan
 
+Status: completed
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Add team-shared Codex and Claude agent definitions plus reusable orchestration and experiment-validation skills for the BDD100K detector project.
@@ -32,7 +34,7 @@
 - Consumes: repository files under `.codex/`, `.claude/`, and `.agents/skills/`.
 - Produces: `unittest` coverage for discoverability, model routing, read-only roles, canonical skill presence, and delegation confirmation language.
 
-- [ ] **Step 1: Write the failing structural tests**
+- [x] **Step 1: Write the failing structural tests**
 
 Create `tests/test_agent_configuration.py` using `unittest`, `tomllib`, and
 `pathlib.Path`. Define constants for the four role names and helpers
@@ -67,7 +69,7 @@ canonical skill. Assert orchestration text contains all of `easy`, `difficult`,
 `.codex/config.toml` nor any agent file contains `model_context_window` or
 `model_auto_compact_token_limit`.
 
-- [ ] **Step 2: Run the test and verify it fails**
+- [x] **Step 2: Run the test and verify it fails**
 
 Run:
 
@@ -77,7 +79,7 @@ python -m unittest tests.test_agent_configuration -v
 
 Expected: FAIL because the agent and skill files do not exist.
 
-- [ ] **Step 3: Commit the contract test**
+- [x] **Step 3: Commit the contract test**
 
 ```bash
 git add tests/test_agent_configuration.py
@@ -96,7 +98,7 @@ git commit -m "Test shared agent configuration contracts"
 - Consumes: `AGENTS.md`, `.agent/PLANS.md`, relevant active plans, `docs/experiments.md`, and `docs/HANDOFF_3060.md`.
 - Produces: `$bddcv-orchestration` and `$bddcv-experiment-validation` workflows; Claude routers import the corresponding canonical file using repository-relative references.
 
-- [ ] **Step 1: Write the orchestration skill**
+- [x] **Step 1: Write the orchestration skill**
 
 Create a valid skill with name `bddcv-orchestration`. Its description activates
 only when classifying or delegating project work. Its workflow must:
@@ -115,7 +117,7 @@ goal, relevant files, constraints, acceptance criteria, permitted writes, tests,
 and expected return format in every worker task packet. Include the Codex and
 Claude recommendation tables from the spec and the escalation conditions.
 
-- [ ] **Step 2: Write the experiment-validation skill**
+- [x] **Step 2: Write the experiment-validation skill**
 
 Create a valid skill with name `bddcv-experiment-validation`. Its description
 activates for changes to data, training, checkpoints, profiling, prediction, or
@@ -126,7 +128,7 @@ metrics, backend recipe disclosure, and protection of the completed RT-DETR-l ru
 Require final output beginning with exactly one of `PASS`, `FAIL`, or `BLOCKED`,
 followed by commands, observed evidence, and remaining uncertainty.
 
-- [ ] **Step 3: Add Claude skill routers**
+- [x] **Step 3: Add Claude skill routers**
 
 Create minimal valid Claude skill files with matching names and descriptions. Each
 body imports its canonical source:
@@ -136,7 +138,7 @@ Follow the canonical project skill exactly:
 @../../../.agents/skills/<skill-name>/SKILL.md
 ```
 
-- [ ] **Step 4: Validate the canonical skills**
+- [x] **Step 4: Validate the canonical skills**
 
 Run:
 
@@ -147,7 +149,7 @@ python /home/orlab/.codex/skills/.system/skill-creator/scripts/quick_validate.py
 
 Expected: both commands report valid skills.
 
-- [ ] **Step 5: Run the focused structural test**
+- [x] **Step 5: Run the focused structural test**
 
 ```bash
 python -m unittest tests.test_agent_configuration -v
@@ -155,7 +157,7 @@ python -m unittest tests.test_agent_configuration -v
 
 Expected: role-file assertions still fail; skill assertions pass.
 
-- [ ] **Step 6: Commit the shared skills**
+- [x] **Step 6: Commit the shared skills**
 
 ```bash
 git add .agents/skills .claude/skills
@@ -175,7 +177,7 @@ git commit -m "Add shared BDDCV orchestration skills"
 - Consumes: canonical shared skills and repository state.
 - Produces: four project-scoped custom Codex agents discoverable by their `name` fields.
 
-- [ ] **Step 1: Configure global project agent settings**
+- [x] **Step 1: Configure global project agent settings**
 
 Add this section to `.codex/config.toml` without setting a primary model or context
 window:
@@ -195,35 +197,35 @@ path = ".agents/skills/bddcv-experiment-validation/SKILL.md"
 enabled = true
 ```
 
-- [ ] **Step 2: Add the worker agent**
+- [x] **Step 2: Add the worker agent**
 
 Create a TOML agent named `bddcv-worker` using `gpt-5.6-luna`, effort `max`, and
 `workspace-write`. Its instructions require a bounded task packet, relevant shared
 state reads, minimal scoped edits, focused verification, no delegation, and a
 return containing files, commands, results, and risks.
 
-- [ ] **Step 3: Add the explorer agent**
+- [x] **Step 3: Add the explorer agent**
 
 Create a TOML agent named `bddcv-explorer` using `gpt-5.6-luna`, effort `xhigh`,
 and `read-only`. Its instructions require evidence with file/symbol references and
 forbid edits, installs, and training. It must recommend promotion to Terra Max for
 the complex cases named in the spec.
 
-- [ ] **Step 4: Add the validator agent**
+- [x] **Step 4: Add the validator agent**
 
 Create a TOML agent named `bddcv-validator` using `gpt-5.6-terra`, effort `max`,
 and `read-only`. Its instructions require the experiment-validation skill when
 applicable, direct evidence, the three-state result format, and no implementation
 fixes.
 
-- [ ] **Step 5: Add the reviewer agent**
+- [x] **Step 5: Add the reviewer agent**
 
 Create a TOML agent named `bddcv-reviewer` using `gpt-5.6-sol`, effort `high`, and
 `read-only`. Its instructions require independent diff review, severity-ordered
 findings, concrete failure scenarios, file references, and residual risks when no
 findings exist.
 
-- [ ] **Step 6: Run the focused structural test**
+- [x] **Step 6: Run the focused structural test**
 
 ```bash
 python -m unittest tests.test_agent_configuration -v
@@ -231,7 +233,7 @@ python -m unittest tests.test_agent_configuration -v
 
 Expected: Codex and skill assertions pass; Claude role assertions fail.
 
-- [ ] **Step 7: Commit the Codex agents**
+- [x] **Step 7: Commit the Codex agents**
 
 ```bash
 git add .codex tests/test_agent_configuration.py
@@ -250,33 +252,33 @@ git commit -m "Configure project Codex subagents"
 - Consumes: canonical shared skills through Claude routers and repository state.
 - Produces: four project-scoped Claude Code agents discoverable by frontmatter name.
 
-- [ ] **Step 1: Add the worker agent**
+- [x] **Step 1: Add the worker agent**
 
 Create a Markdown agent named `bddcv-worker` with `model: sonnet`, `effort: high`,
 `skills: [bddcv-orchestration]`, and tools `Read, Grep, Glob, Bash, Edit, Write`.
 Mirror the Codex worker contract and explicitly exclude subagent spawning.
 
-- [ ] **Step 2: Add the explorer agent**
+- [x] **Step 2: Add the explorer agent**
 
 Create a Markdown agent named `bddcv-explorer` with `model: haiku`, `effort: high`,
 and tools `Read, Grep, Glob`. Mirror the Codex explorer contract and request Sonnet
 High promotion for complex checkpoint, RNG, dependency, or cross-backend work.
 
-- [ ] **Step 3: Add the validator agent**
+- [x] **Step 3: Add the validator agent**
 
 Create a Markdown agent named `bddcv-validator` with `model: sonnet`, `effort:
 high`, `skills: [bddcv-experiment-validation]`, and tools `Read, Grep, Glob, Bash`.
 Mirror the validator evidence and result-format contract. State that Bash writes
 must be limited to ignored test artifacts or `/tmp`.
 
-- [ ] **Step 4: Add the reviewer agent**
+- [x] **Step 4: Add the reviewer agent**
 
 Create a Markdown agent named `bddcv-reviewer` with `model: opus`, `effort: high`,
 and tools `Read, Grep, Glob, Bash`. Mirror the independent review contract and
 permit Bash only for read-only Git inspection and tests that do not alter tracked
 or production artifacts.
 
-- [ ] **Step 5: Run the focused structural test**
+- [x] **Step 5: Run the focused structural test**
 
 ```bash
 python -m unittest tests.test_agent_configuration -v
@@ -284,7 +286,7 @@ python -m unittest tests.test_agent_configuration -v
 
 Expected: PASS.
 
-- [ ] **Step 6: Commit the Claude agents**
+- [x] **Step 6: Commit the Claude agents**
 
 ```bash
 git add .claude/agents tests/test_agent_configuration.py
@@ -305,13 +307,13 @@ git commit -m "Configure project Claude subagents"
 - Consumes: all agent definitions and skills from Tasks 2–4.
 - Produces: primary-agent routing instructions, complete shared state, and repository-level verification evidence.
 
-- [ ] **Step 1: Add concise primary routing to AGENTS.md**
+- [x] **Step 1: Add concise primary routing to AGENTS.md**
 
 Add a `Subagent Routing` subsection that points to `$bddcv-orchestration`, states
 the easy+short direct-work rule, and mandates confirmation with task/model
 recommendations before difficult or long delegation. Do not copy the full skill.
 
-- [ ] **Step 2: Run all structural and repository tests**
+- [x] **Step 2: Run all structural and repository tests**
 
 ```bash
 python -m unittest discover -s tests -v
@@ -319,7 +321,7 @@ python -m unittest discover -s tests -v
 
 Expected: all tests pass.
 
-- [ ] **Step 3: Run skill validation again**
+- [x] **Step 3: Run skill validation again**
 
 ```bash
 python /home/orlab/.codex/skills/.system/skill-creator/scripts/quick_validate.py .agents/skills/bddcv-orchestration
@@ -328,7 +330,7 @@ python /home/orlab/.codex/skills/.system/skill-creator/scripts/quick_validate.py
 
 Expected: both skills are valid.
 
-- [ ] **Step 4: Inspect the final diff and protected paths**
+- [x] **Step 4: Inspect the final diff and protected paths**
 
 ```bash
 git diff --check
@@ -339,14 +341,14 @@ git diff -- AGENTS.md .agent .agents .codex .claude tests docs/superpowers
 Expected: only configuration, test, plan, spec, and shared-state files change; no
 files under `data/`, `runs/`, or `weights/` change.
 
-- [ ] **Step 5: Update shared project state**
+- [x] **Step 5: Update shared project state**
 
 Record the configuration and validation outcome in `.agent/DECISIONS.md` and
 `.agent/HANDOFF.md`. Remove completed configuration items from `.agent/TODO.md`
 without changing the separate six-model profiling backlog. Add this plan to the
 archive section in `.agent/PLANS.md` and move the plan file to the archive path.
 
-- [ ] **Step 6: Commit the integration**
+- [x] **Step 6: Commit the integration**
 
 ```bash
 git add AGENTS.md .agent .agents .codex .claude tests docs/superpowers

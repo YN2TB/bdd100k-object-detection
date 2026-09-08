@@ -33,8 +33,16 @@ bdd100k-object-detection/
 │   └── plans/
 │       ├── active/                       Kế hoạch đang làm
 │       └── archive/                      Kế hoạch hoàn tất; .gitkeep giữ thư mục rỗng
-├── .codex/config.toml                [G] Cấu hình project Codex
-├── .claude/settings.json             [G] Cấu hình project Claude Code
+├── .agents/skills/                   [G] Skill workflow chuẩn dùng chung
+│   ├── bddcv-orchestration/              Phân loại task, xác nhận và điều phối agent
+│   └── bddcv-experiment-validation/      Kiểm chứng pipeline và tính hợp lệ thí nghiệm
+├── .codex/                           [G] Cấu hình project Codex
+│   ├── config.toml                       Bật agent và nạp shared skills
+│   └── agents/                           Worker, explorer, validator và reviewer
+├── .claude/                          [G] Cấu hình project Claude Code
+│   ├── settings.json
+│   ├── agents/                           Worker, explorer, validator và reviewer
+│   └── skills/                           Router đến shared skills chuẩn
 ├── .claude/settings.local.json       [R] (*) Cấu hình cá nhân
 ├── configs/
 │   └── bdd_source.yaml               [G] Dataset path, split và class names

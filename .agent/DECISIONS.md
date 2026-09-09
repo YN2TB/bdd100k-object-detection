@@ -104,3 +104,11 @@ The user prioritizes training speed and does not require conservative GPU/VRAM
 limits. Select the fastest valid measured configuration up to 95% sampled total
 VRAM; use lower memory only for candidates within 1% throughput. OOM, non-finite
 loss, validation failure, and candidates above the ceiling remain ineligible.
+
+## 2026-09-09: RF-DETR latest-checkpoint interval
+
+Use RF-DETR `checkpoint_interval=2`. In RF-DETR 1.10.1, an interval of 1
+suppresses the separate latest-checkpoint callback and produces only numbered
+archives. An interval of 2 preserves periodic archives while atomically updating
+full-state `last.ckpt` every epoch for watcher stops, supervisor progress, and
+faithful resume.

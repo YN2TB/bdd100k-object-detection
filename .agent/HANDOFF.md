@@ -141,3 +141,19 @@ The existing hourly automation was updated and enabled as
 `BDD CV: báo train mỗi giờ`, targeting this task. It monitors the queue and
 reports progress/ETA/GPU telemetry in Vietnamese, pauses on failure or verified
 completion, never launches duplicates, and never retrains completed RT-DETR-l.
+
+## RF-DETR smoke checkpoint repair
+
+The first RF-DETR smoke exposed a native checkpoint naming mismatch: with
+`checkpoint_interval=1`, RF-DETR 1.10.1 suppresses `last.ckpt` and writes only
+`checkpoint_0.ckpt`, so the epoch-1 watcher could not stop the run. The queue and
+automation were paused before production. The failed smoke evidence is preserved
+under `runs/control/failed-rfdetr-checkpoint-contract-20260909-1507/`.
+
+Commit `8be9cfe` changes the interval to 2, enabling full-state `last.ckpt` every
+epoch plus numbered archives every two epochs. All 89 main tests passed with one
+isolated integration skip; the isolated RF-DETR cache integration test passed in
+`.venv-rfdetr`. The commit was pushed before GPU execution resumed. Queue v3 is
+running independently as `bddcv-remaining-models-v3.service`, starting directly
+at fresh RF-DETR epoch-1 smoke; earlier successful smoke runs were not repeated.
+The hourly automation is active again and references the v3 service.

@@ -24,12 +24,20 @@ class OutputRoutingTests(unittest.TestCase):
                                       out=run, epochs=50, imgsz=640, batch=8,
                                       workers=4, name="example")
             captured = []
+            oom_retries = []
 
             class FakeTrainer:
                 def __init__(self, model):
                     self.model = model
+                    self.callbacks = {}
+
+                def add_callback(self, name, callback):
+                    self.callbacks[name] = callback
 
                 def train(self, **kwargs):
+                    state = argparse.Namespace(_oom_retries=0)
+                    self.callbacks["on_train_epoch_start"](state)
+                    oom_retries.append(state._oom_retries)
                     captured.append((self.model, kwargs))
 
             fake = types.ModuleType("ultralytics")
@@ -44,6 +52,7 @@ class OutputRoutingTests(unittest.TestCase):
             self.assertEqual(captured[1][1]["save_dir"], str(run))
             self.assertEqual(captured[1][0], str(run / "weights/last.pt"))
             self.assertEqual(Path(captured[0][0]), ROOT / "weights/rtdetr-l.pt")
+            self.assertEqual(oom_retries, [3, 3])
 
     def test_relative_output_uses_callers_directory(self):
         from bddcv.paths import resolve_output, TRAIN_DIR

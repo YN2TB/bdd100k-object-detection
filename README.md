@@ -151,6 +151,50 @@ Windows: kích hoạt `.venv\Scripts\Activate.ps1`. Không đổi model/hyperpar
 để phù hợp với phần tổ chức thư mục. Sửa duy nhất trường `path` trong
 `configs/bdd_source.yaml` theo dataset trên máy; giữ split và class names.
 
+### Model registry and RF-DETR isolation
+
+The approved registry ids are `yolo11s`, `yolo11m`, `yolo26s`,
+`frcnn-r50-fpn-v2`, `rtdetr-l`, and `rfdetr-small`. Generic checkpoints such as
+`best.pt` require `--model-id`; backend selection never guesses from a filename.
+For RF-DETR, create the generated COCO view and use a separate environment:
+
+```bash
+python scripts/build_rfdetr_adapter.py
+python -m venv .venv-rfdetr
+.venv-rfdetr/bin/python -m pip install -r requirements-rfdetr.txt -c constraints-rfdetr.txt --extra-index-url https://download.pytorch.org/whl/cu128
+```
+
+The RF-DETR adapter is generated under `data/adapters/rfdetr/` and is ignored
+by Git. It uses hard links when possible and verifies image bytes, split
+membership, counts, and the ten shared categories. Do not install RF-DETR into
+the main `.venv`.
+
+Current acceptance and saved measurements: [profiling status](docs/model-profiling-status.md).
+The original sweep timing excluded loader wait; those selections are provisional
+and must be remeasured before use. Full-data smoke/resume acceptance remains pending.
+
+Profile commands write structured, ignored evidence under `runs/profile/` and
+run each candidate in a fresh subprocess. Timing schema 3 uses consecutive step
+completion boundaries (including loader wait), so old timing artifacts are not
+eligible for selection. Conditional RAM-cache trials require GPU utilization
+below 80% and measured loader wait above 20%; retention requires at least 5%
+throughput improvement, host RAM below 75%, and total GPU use at most 90%.
+
+All training entrypoints and the supervisor accept `--cache none|ram` and
+`--prefetch 2|4`; these settings are locked on resume. Choose them from a fresh
+profile rather than applying the historical selections. A cache fitting the
+512-image probe does not establish that the full dataset fits in host RAM;
+full-data acceptance must check that separately.
+
+A host without CUDA reports
+`gpu_unavailable` rather than a misleading CPU timing:
+
+```bash
+python scripts/profile_models.py --model-id yolo11s --model-id frcnn-r50-fpn-v2
+python scripts/predict.py runs/train/yolo11s/weights/best.pt --model-id yolo11s
+python scripts/predict_yolo.py runs/train/rtdetr-l/weights/best.pt --model-id rtdetr-l
+```
+
 ## Chuẩn bị và kiểm tra dữ liệu
 
 Với clone mới chưa có raw labels, `prepare_data.py` trích labels từ archive trước;
@@ -214,8 +258,8 @@ Monitor mặc định ghi `logs/gpu.csv` bằng chế độ tạo mới, từ ch
 ## Prediction và evaluation
 
 ```bash
-python scripts/predict_yolo.py runs/train/yolo11s/weights/best.pt
-python scripts/predict_frcnn.py runs/train/frcnn/best.pt
+python scripts/predict_yolo.py runs/train/yolo11s/weights/best.pt --model-id yolo11s
+python scripts/predict_frcnn.py runs/train/frcnn/best.pt --model-id frcnn-r50-fpn-v2
 python scripts/evaluate.py runs/predictions/yolo.json --title YOLO11s --save runs/evaluation/yolo.json
 python scripts/evaluate.py runs/predictions/frcnn.json --title Faster-R-CNN --save runs/evaluation/frcnn.json
 
@@ -226,8 +270,9 @@ python scripts/evaluate.py runs/train/yolo11s/predictions/val.json --save runs/t
 
 `evaluate.py` chỉ lưu JSON khi có `--save` và tự tạo thư mục cha. Hai predictor mặc
 định lần lượt ghi `runs/predictions/yolo.json` và `frcnn.json`; dùng `--out` riêng để
-không ghi đè các export trước. Predictor YOLO hiện chưa có đường chạy RT-DETR riêng;
-phân công RTX 3060 chỉ trả training artifacts để đánh giá tập trung trên máy chính.
+không ghi đè các export trước. `predict_yolo.py` cũng nhận `--model-id rtdetr-l` để
+export RT-DETR theo cùng chuẩn COCO. RF-DETR prediction chạy trong môi trường cô
+lập của nó; mọi ảnh không có box đều được giữ là ảnh không có detection trong JSON.
 
 ## Migration artifact cũ
 

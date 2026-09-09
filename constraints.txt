@@ -2,3 +2,6 @@
 # which on Windows is CPU-only, silently disabling GPU training.
 torch==2.11.0+cu128
 torchvision==0.26.0+cu128
+# Pin the backend used by the main environment; install with this file as a
+# constraint so pip cannot silently replace the CUDA Torch build.
+ultralytics==8.4.142

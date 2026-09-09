@@ -35,13 +35,29 @@ def image_id_map(gt_json: Path) -> dict[str, int]:
 
 
 def evaluate(gt_json: Path, pred_json: Path) -> dict:
-    """Run COCOeval and return overall, per-size and per-class metrics."""
+    """Run COCOeval and return overall, per-size and per-class metrics.
+
+    An empty prediction list is a valid detector outcome (for example a model
+    that produced no boxes during a smoke test).  ``pycocotools.loadRes``
+    rejects that list, so construct an empty result dataset and run the same
+    evaluator. This preserves undefined metrics for absent classes and sizes.
+    """
+    preds = json.loads(Path(pred_json).read_text(encoding="utf-8"))
+    if not isinstance(preds, list):
+        raise ValueError(f"{pred_json} must contain a JSON list of detections")
+
     with contextlib.redirect_stdout(io.StringIO()):
         coco_gt = COCO(str(gt_json))
-        preds = json.loads(Path(pred_json).read_text(encoding="utf-8"))
-        if not preds:
-            raise ValueError(f"{pred_json} contains no detections")
-        coco_dt = coco_gt.loadRes(preds)
+        if preds:
+            coco_dt = coco_gt.loadRes(preds)
+        else:
+            coco_dt = COCO()
+            coco_dt.dataset = {
+                "images": coco_gt.dataset["images"],
+                "categories": coco_gt.dataset["categories"],
+                "annotations": [],
+            }
+            coco_dt.createIndex()
         ev = COCOeval(coco_gt, coco_dt, iouType="bbox")
         ev.evaluate()
         ev.accumulate()

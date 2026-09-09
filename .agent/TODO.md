@@ -3,17 +3,21 @@
 Active execution plan:
 [six-model profiling](plans/active/2026-09-08-six-model-profiling.md).
 
-- [ ] Add registry entries for YOLO11s, YOLO11m, YOLO26s, Faster R-CNN,
-  RT-DETR-l, and RF-DETR Small.
-- [ ] Pin/verify backend dependencies and isolate RF-DETR.
-- [ ] Build and validate the RF-DETR dataset adapter.
-- [ ] Add common training, profiling, resume, and prediction interfaces.
-- [ ] Profile batch/workers on RTX 3060 with 10% VRAM headroom.
-- [ ] Run two-epoch stop/resume smoke validation for five unfinished models.
-- [ ] Verify RT-DETR-l checkpoint loading/prediction without retraining it.
-- [ ] Document measured hardware profiles, tensor shapes, smoke status, and ETA.
+- [ ] Complete final independent review of applied repairs (86 main-environment tests plus isolated RF-DETR cache test pass).
+- [ ] Re-run corrected end-to-end profiling for five unfinished models; saved
+  compute-only timing does not establish valid batch/worker selection.
+- [ ] Validate implemented conditional RAM-cache trials on the GPU and full dataset.
+- [ ] Run two-epoch full-data stop/resume validation for five unfinished models.
+- [ ] Record resolved recipes, measured epoch/setup/validation times and ETA.
+- [ ] Complete final independent acceptance review and archive the plan only
+  after its GPU profiling and smoke criteria pass.
 
-Related defects required by the active plan:
+Registry entries, backend interfaces and RF-DETR isolation are present in the
+working tree. Adapter split/category/image-byte validation passes. RT-DETR-l
+loading/prediction has a saved passing receipt, with protected hashes rechecked
+on 2026-09-09. See `docs/model-profiling-status.md` for evidence and limitations.
+
+Implemented repairs requiring runtime acceptance:
 
 - [ ] RESUME-1: reconcile CSV progress with checkpoint epoch.
 - [ ] RESUME-2: distinguish early clean stop from completed budget.

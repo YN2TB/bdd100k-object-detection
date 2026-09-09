@@ -21,6 +21,7 @@ from torchvision.models.detection.faster_rcnn import FastRCNNPredictor
 from torchvision.transforms import functional as TF
 
 from .constants import DET_CLASSES
+from .prediction import write_coco_predictions
 
 # Matches YOLO imgsz=640 on 1280x720 source imagery.
 MIN_SIZE = 360
@@ -42,9 +43,19 @@ class CocoDetectionDataset(Dataset):
     def __len__(self) -> int:
         return len(self.images)
 
+    def load_image(self, filename: str):
+        with Image.open(self.images_dir / filename) as image:
+            return image.convert("RGB")
+
+    def cache_images(self) -> None:
+        from .cache import DecodedImageCache
+        self.load_image = DecodedImageCache(
+            [meta["file_name"] for meta in self.images], self.load_image,
+        )
+
     def __getitem__(self, i: int):
         meta = self.images[i]
-        img = Image.open(self.images_dir / meta["file_name"]).convert("RGB")
+        img = self.load_image(meta["file_name"])
         anns = self.by_image[meta["id"]]
 
         boxes = [[a["bbox"][0], a["bbox"][1],
@@ -113,6 +124,4 @@ def predict_to_coco(model, loader, device, out_json: Path) -> Path:
                              round(x2 - x1, 2), round(y2 - y1, 2)],
                     "score": round(float(s), 5),
                 })
-    out_json.parent.mkdir(parents=True, exist_ok=True)
-    out_json.write_text(json.dumps(preds), encoding="utf-8")
-    return out_json
+    return write_coco_predictions(preds, out_json)

@@ -17,6 +17,11 @@ data/source_daytime_clear/*
 runs/
 datasets/
 
+# Generated RF-DETR view and its isolated interpreter are intentionally local.
+data/adapters/
+.venv-rfdetr/
+runs/profile/
+
 # Pretrained weights fetched automatically by Ultralytics
 weights/
 *.pt

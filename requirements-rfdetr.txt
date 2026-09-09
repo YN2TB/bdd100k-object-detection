@@ -1,0 +1,2 @@
+# Installed only into .venv-rfdetr; never into the main project environment.
+rfdetr[train]==1.10.1

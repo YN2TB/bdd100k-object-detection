@@ -1,6 +1,6 @@
 # Six-model profiling and RTX 3060 optimization plan
 
-Status: approved, awaiting implementation command.
+Status: implementation in progress; user authorized implementation and delegation.
 
 ## Goal
 
@@ -124,3 +124,16 @@ unfinished models pass profile plus two-epoch smoke/resume, the RT-DETR-l baseli
 remains intact, and the measured RTX 3060 profile is documented. A dependency or
 hardware incompatibility must be recorded as `blocked`, not represented as ready.
 
+## 2026-09-09 continuation evidence
+
+Implementation/review repairs are in the working tree; 77 CPU tests pass. See
+`docs/model-profiling-status.md` for checked commands and preserved evidence.
+The old official sweep excludes loader wait and is superseded. Corrected timing
+uses aggregate measured elapsed time and rejects incompatible saved outcomes.
+No training was launched in this continuation. Final independent review,
+corrected GPU sweeps with implemented conditional RAM-cache trials, and full-data smoke/resume
+acceptance remain outstanding. Do not mark this plan complete from unit tests.
+
+RAM-cache continuation: timing schema 3, cache/prefetch resume locking, and CPU
+native cache equivalence checks are implemented. 86 main-environment tests and
+one separate RF-DETR cache integration pass. GPU/full-data acceptance is pending.

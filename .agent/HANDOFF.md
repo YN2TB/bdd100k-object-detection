@@ -1,39 +1,33 @@
 # Handoff
 
-Updated: 2026-09-08
+Updated: 2026-09-09
 
 ## Latest work
 
-A repository-scoped Codex and Claude subagent architecture is implemented from
-`docs/superpowers/specs/2026-09-08-shared-subagents-and-skills-design.md` and
-`docs/superpowers/plans/2026-09-08-shared-subagents-and-skills.md`. Canonical
-skills live under `.agents/skills/`; native role definitions live under
-`.codex/agents/` and `.claude/agents/`. Claude skill routers live under
-`.claude/skills/`. The roles are explorer, worker, validator, and reviewer, with
-a mandatory confirmation gate before difficult or long delegation.
+The six-model plan is implemented in the working tree on
+`codex/add-model-profiling`; it is being committed and pushed before GPU work. The previous
+handoff incorrectly said implementation had not started. The active plan records
+prior authorization for implementation and delegation. On 2026-09-09 the user
+explicitly authorized training the remaining models after this code is committed
+and pushed to GitHub.
 
-Verification completed with 16 unit tests passing, both canonical skills passing
-`quick_validate.py`, six Claude agent/skill frontmatter files parsing as YAML, and
-Codex CLI 0.153.1 loading the repository configuration without a syntax error.
-The Conda `python` lacks PyYAML, so skill validation used `/usr/bin/python3`; no
-dependency was installed.
+Initial verification: `.venv/bin/python -m unittest discover -s tests -v` passed
+52 tests. The default shell Conda Python lacks Torch; use `.venv/bin/python`.
+Both `.venv` and `.venv-rfdetr` pass `python -m pip check`. RF-DETR is isolated,
+and `validate_adapter()` reports exact split/category membership and byte matches
+for 12,454 training and 1,764 validation images. Source manifest hashes match
+`docs/HANDOFF_3060.md`; filenames/counts/disjointness also pass.
 
-`.agent/PLANS.md` now records the plan storage convention: the current
-`docs/superpowers/` files are limited to initial repository agent/workflow setup;
-future plans go to `.agent/plans/active/` and move to `.agent/plans/archive/` when
-complete.
+Saved sweeps exist under `runs/profile/official/`, but independent review found
+compute-only timing excludes loader wait, so their selections are superseded.
+See `docs/model-profiling-status.md` for historical values and limitations.
+Review repairs were applied for timing/selection, native RF-DETR seed,
+supervisor metadata/resume compatibility, YOLO early-stop and dataset locking,
+Faster R-CNN validation batch alignment, and prediction input coverage/resolution.
 
-Previous completed work remains unchanged:
-
-Artifact organization and the detailed README were committed as `51fd8dc` and
-pushed directly to `origin/main`. The current branch is
-`codex/add-model-profiling`, created from that exact commit.
-
-The next phase is fully specified in
-`.agent/plans/active/2026-09-08-six-model-profiling.md`. It adds YOLO11m,
-YOLO26s, and RF-DETR Small, profiles five unfinished models for the RTX 3060
-12 GB, and validates two-epoch stop/resume smoke runs. No implementation or
-training for this phase has started.
+The saved RT-DETR baseline loading/prediction receipt reports pass. On 2026-09-09,
+all four protected file hashes were recomputed and still match its receipt.
+No baseline retraining or centralized evaluation was performed.
 
 ## Artifact state
 
@@ -57,6 +51,53 @@ usage limits. Detailed logic defects remain deferred by user-approved scope.
 
 ## Next step
 
-The shared subagent setup is complete. Wait for the user's separate command before
-starting the six-model profiling plan. Do not launch 50-epoch runs, retrain
-RT-DETR-l, regenerate manifests, or rewrite historical logs.
+Final repair verification: `.venv/bin/python -m unittest discover -s tests -v`
+passed 77 tests (exit 0); `git diff --check` and
+`.venv/bin/python -m compileall -q scripts src/bddcv` passed (exit 0).
+The final independent reviewer and two workers hit usage limits. The primary
+completed remaining checkpoint provenance and timing fixes locally, but final
+independent review remains pending. YOLO now publishes provenance at every native
+checkpoint save and refuses unsafe unmarked legacy resume. Prediction reading
+compatibility is unchanged. No commits or GPU training were performed.
+
+Next: finish independent review, then re-run corrected GPU profiling in a new output directory when training/probe
+execution resumes. Old profiling outcomes must not be treated as accepted results.
+Five full-data two-epoch stop/resume smoke validations remain outstanding; the
+existing `runs/smoke/official/yolo11s` directory has no completed checkpoint.
+Do not launch 50-epoch runs, retrain RT-DETR-l, regenerate manifests, or rewrite
+historical logs. The active plan remains in progress until measured acceptance.
+
+## Latest continuation: RAM-cache implementation
+
+Implemented conditional RAM-cache trials, explicit `--cache none|ram` and
+`--prefetch 2|4` options in the training entrypoints/supervisor, resume locking,
+copy-on-read decoded caching, sampled peak host RAM, and strict device-memory
+selection evidence. Timing schema is now 3; older profiles remain ineligible.
+Fixed supervisor sibling imports from another working directory. No GPU runs.
+
+Verification: 87 main-environment tests discovered, 86 passed and one isolated
+RF-DETR integration skipped; that test passed separately under `.venv-rfdetr`.
+Compilation, CLI help and diff whitespace checks passed. See
+`docs/model-profiling-status.md` for commands and limitations. Remaining work is
+independent review and actual GPU/ full-data acceptance, including measurement of
+resolved recipes, precision, tensor shapes and ETA. Full-data cache fit is not
+established by a 512-image cache trial.
+
+## User reporting requirement
+
+When new training starts, enable Vietnamese reports every hour: model/epoch/%
+progress, elapsed/recent epoch time, remaining time and completion ETA, GPU
+utilization/VRAM/peak/temperature/power, plus restarts or errors. Start the per-run
+GPU sampler and reuse the paused previous hourly schedule with current paths and
+this task as destination. Do not reactivate the historical RT-DETR run prompt.
+Activate hourly reporting when the first new GPU run is launched.
+
+## Pre-push verification for model expansion
+
+Before publishing the branch, `.venv/bin/python -m unittest discover -s tests -v`
+discovered 87 tests: 86 passed and the isolated RF-DETR integration test skipped.
+That integration test passed under `.venv-rfdetr`. Both environments passed
+`pip check`; source/adapter counts, filenames, split disjointness, categories and
+image bytes passed validation. Python compilation, CLI help, and `git diff
+--check` passed. The RTX 3060 was visible with 12,288 MiB VRAM. No new GPU workload
+had been launched at this checkpoint.

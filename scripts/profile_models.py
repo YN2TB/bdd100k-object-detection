@@ -55,6 +55,10 @@ def main() -> int:
     parser.add_argument("--phase", choices=("all", "batch", "workers"), default="all")
     parser.add_argument("--force", action="store_true",
                         help="rerun completed loader variants instead of reusing artifacts")
+    parser.add_argument("--max-memory-fraction", type=float, default=0.95,
+                        help="maximum sampled total VRAM fraction (default: 0.95)")
+    parser.add_argument("--tie-fraction", type=float, default=0.01,
+                        help="prefer lower memory only within this throughput gap (default: 0.01)")
     args = parser.parse_args()
     out = resolve_output(args.out, RUNS_DIR / "profile")
     models = args.model_ids or list(UNFINISHED_MODELS)
@@ -83,7 +87,11 @@ def main() -> int:
             outcomes.extend(load_batch_outcomes(out, spec.model_id))
 
     batch_selected = {
-        model_id: select_profile(item for item in outcomes if item.model_id == model_id)
+        model_id: select_profile(
+            (item for item in outcomes if item.model_id == model_id),
+            max_memory_fraction=args.max_memory_fraction,
+            tie_fraction=args.tie_fraction,
+        )
         for model_id in models
     }
     loader_outcomes = []
@@ -109,7 +117,11 @@ def main() -> int:
                 if item.model_id == spec.model_id
                 and int(item.metadata.get("workers", 0)) > 0
             ]
-            best_nonzero = select_profile(nonzero)
+            best_nonzero = select_profile(
+                nonzero,
+                max_memory_fraction=args.max_memory_fraction,
+                tie_fraction=args.tie_fraction,
+            )
             if best_nonzero is not None:
                 workers = int(best_nonzero.metadata["workers"])
                 variant = f"workers-{workers}-prefetch-4"
@@ -125,6 +137,10 @@ def main() -> int:
         "profile_schema_version": PROFILE_SCHEMA_VERSION,
         "timing_schema": TIMING_SCHEMA,
         "timing_schema_version": TIMING_SCHEMA_VERSION,
+        "selection_policy": {
+            "max_memory_fraction": args.max_memory_fraction,
+            "tie_fraction": args.tie_fraction,
+        },
         "probe_manifest": str(manifest),
         "outcomes": [item.to_dict() for item in outcomes],
         "batch_selected": {},
@@ -136,7 +152,11 @@ def main() -> int:
         batch_choice = batch_selected[model_id]
         summary["batch_selected"][model_id] = batch_choice.to_dict() if batch_choice else None
         final_pool = [item for item in loader_outcomes if item.model_id == model_id]
-        selected = select_profile(final_pool) if final_pool else batch_choice
+        selected = select_profile(
+            final_pool,
+            max_memory_fraction=args.max_memory_fraction,
+            tie_fraction=args.tie_fraction,
+        ) if final_pool else batch_choice
         if selected is not None and args.phase != "batch" and should_try_ram_cache(selected):
             workers = int(selected.metadata.get("workers", 0))
             prefetch = int(selected.metadata.get("prefetch", 2))
@@ -149,7 +169,11 @@ def main() -> int:
                 probe_manifest=manifest, source=args.source, workers=workers,
                 prefetch=prefetch, warmup=10, steps=30, validation_steps=10,
             )
-            retained = accept_ram_cache(selected, trial)
+            retained = accept_ram_cache(
+                selected,
+                trial,
+                max_memory_fraction=args.max_memory_fraction,
+            )
             summary["cache_trials"][model_id] = {
                 "retained": retained, "outcome": trial.to_dict(),
             }

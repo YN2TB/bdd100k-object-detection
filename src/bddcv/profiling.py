@@ -262,10 +262,10 @@ def _as_outcome(value: ProfileOutcome | Mapping[str, Any]) -> ProfileOutcome:
 def select_profile(
     outcomes: Iterable[ProfileOutcome | Mapping[str, Any]],
     *,
-    max_memory_fraction: float = 0.90,
-    tie_fraction: float = 0.03,
+    max_memory_fraction: float = 0.95,
+    tie_fraction: float = 0.01,
 ) -> ProfileOutcome | None:
-    """Choose max throughput under 90% total memory, preferring lower memory.
+    """Choose max throughput within the memory ceiling, preferring lower memory.
 
     Candidates within ``tie_fraction`` below the fastest are considered tied;
     among those the lower-memory candidate wins.  OOM, nonfinite, validation
@@ -300,8 +300,15 @@ def should_try_ram_cache(baseline: ProfileOutcome) -> bool:
             and isinstance(wait, (int, float)) and math.isfinite(wait) and wait > 0.20)
 
 
-def accept_ram_cache(baseline: ProfileOutcome, candidate: ProfileOutcome) -> bool:
+def accept_ram_cache(
+    baseline: ProfileOutcome,
+    candidate: ProfileOutcome,
+    *,
+    max_memory_fraction: float = 0.95,
+) -> bool:
     """Require 5% throughput improvement and both measured memory budgets."""
+    if not 0 < max_memory_fraction <= 1:
+        raise ValueError("max_memory_fraction must be in (0, 1]")
     ram = candidate.metadata.get("host_ram_peak_percent")
     memory = candidate.memory_fraction
     return (candidate.model_id == baseline.model_id and candidate.batch == baseline.batch
@@ -309,7 +316,7 @@ def accept_ram_cache(baseline: ProfileOutcome, candidate: ProfileOutcome) -> boo
             and candidate.timing_compatible and candidate.successful
             and baseline.throughput > 0 and candidate.throughput >= baseline.throughput * 1.05
             and isinstance(ram, (int, float)) and math.isfinite(ram) and ram < 75
-            and memory is not None and 0 < memory <= 0.90)
+            and memory is not None and 0 < memory <= max_memory_fraction)
 
 
 def make_probe_manifest(

@@ -2,6 +2,7 @@
 import sys
 import time
 import unittest
+import inspect
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
@@ -20,6 +21,15 @@ from bddcv.native_probes import (
 
 
 class NativeProbeTests(unittest.TestCase):
+    def test_frcnn_data_wait_buffer_exists_before_timed_loader_is_built(self):
+        from bddcv.native_probes import run_frcnn_probe
+
+        source = inspect.getsource(run_frcnn_probe)
+        self.assertLess(
+            source.index("data_wait: list[float] = []"),
+            source.index("train_loader = TimedLoader("),
+        )
+
     def test_cycle_names_repeats_deterministically_to_exact_batches(self):
         self.assertEqual(
             cycle_names(["a.jpg", "b.jpg", "c.jpg"], 8),

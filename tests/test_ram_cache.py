@@ -32,7 +32,7 @@ class RamCacheTests(unittest.TestCase):
         for rate, ram in [(104, 40), (110, 75), (110, None)]:
             self.assertFalse(profiling.accept_ram_cache(base, outcome(rate, ram, cache='ram')))
         high_vram = outcome(rate=110, cache='ram')
-        high_vram.peak_total_memory_bytes = 950
+        high_vram.peak_total_memory_bytes = 951
         self.assertFalse(profiling.accept_ram_cache(base, high_vram))
 
     def test_decoded_cache_preserves_fresh_augmentation_inputs(self):

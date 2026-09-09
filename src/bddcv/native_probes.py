@@ -421,6 +421,7 @@ def run_frcnn_probe(*, model_id: str, source: Path, manifest: Path, out: Path,
     common = {"collate_fn": collate, "pin_memory": True,
               **loader_options(workers, prefetch)}
     batch_starts: list[float] = []
+    data_wait: list[float] = []
     train_loader = TimedLoader(
         DataLoader(train_ds, batch_size=batch, shuffle=False, **common),
         batch_starts.append, data_wait.append,
@@ -436,7 +437,6 @@ def run_frcnn_probe(*, model_id: str, source: Path, manifest: Path, out: Path,
     full_train_images = len(train_by_name)
     total_schedule_steps = 50 * math.ceil(full_train_images / batch)
     durations: list[float] = []
-    data_wait: list[float] = []
     shapes: set[tuple[int, ...]] = set()
     dtypes: set[str] = set()
     previous_end: float | None = None

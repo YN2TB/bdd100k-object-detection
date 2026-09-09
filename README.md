@@ -178,7 +178,9 @@ run each candidate in a fresh subprocess. Timing schema 3 uses consecutive step
 completion boundaries (including loader wait), so old timing artifacts are not
 eligible for selection. Conditional RAM-cache trials require GPU utilization
 below 80% and measured loader wait above 20%; retention requires at least 5%
-throughput improvement, host RAM below 75%, and total GPU use at most 90%.
+throughput improvement, host RAM below 75%, and total GPU use at most 95%.
+Selection prioritizes the fastest measured candidate; lower memory wins only when
+throughput is within 1% of the fastest candidate.
 
 All training entrypoints and the supervisor accept `--cache none|ram` and
 `--prefetch 2|4`; these settings are locked on resume. Choose them from a fresh

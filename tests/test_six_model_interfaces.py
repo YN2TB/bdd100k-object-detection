@@ -128,7 +128,25 @@ class ProfilingAndResumeTests(unittest.TestCase):
                            timing_schema=TIMING_SCHEMA,
                            timing_schema_version=TIMING_SCHEMA_VERSION),
         ])
-        self.assertEqual(selected.batch, 16)
+        self.assertEqual(selected.batch, 32)
+
+    def test_speed_priority_uses_one_percent_tie_and_95_percent_vram_ceiling(self):
+        def measured(batch, rate, memory):
+            return ProfileOutcome(
+                "x", batch, "success",
+                peak_memory_bytes=memory, total_memory_bytes=1000,
+                measured_steps=10, measured_elapsed_seconds=batch * 10 / rate,
+                profile_schema_version=PROFILE_SCHEMA_VERSION,
+                timing_schema=TIMING_SCHEMA,
+                timing_schema_version=TIMING_SCHEMA_VERSION,
+            )
+
+        selected = select_profile([
+            measured(8, 100.0, 500),
+            measured(16, 100.9, 900),
+            measured(32, 120.0, 951),
+        ])
+        self.assertEqual(selected.batch, 8)
 
     def test_selection_ignores_outcomes_from_incompatible_timing_schema(self):
         selected = select_profile([

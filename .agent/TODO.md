@@ -4,9 +4,10 @@ Active execution plan:
 [six-model profiling](plans/active/2026-09-08-six-model-profiling.md).
 
 - [ ] Complete final independent review of applied repairs (86 main-environment tests plus isolated RF-DETR cache test pass).
-- [ ] Re-run corrected end-to-end profiling for five unfinished models; saved
-  compute-only timing does not establish valid batch/worker selection.
-- [ ] Validate implemented conditional RAM-cache trials on the GPU and full dataset.
+- [x] Re-run corrected end-to-end profiling for five unfinished models; current
+  selections are in `runs/profile/official-v3/summary.json`.
+- [x] Evaluate conditional RAM-cache triggers on GPU; no selected profile met
+  both trigger conditions, so all resolved profiles use `cache=none`.
 - [ ] Run two-epoch full-data stop/resume validation for five unfinished models.
 - [ ] Record resolved recipes, measured epoch/setup/validation times and ETA.
 - [ ] Complete final independent acceptance review and archive the plan only

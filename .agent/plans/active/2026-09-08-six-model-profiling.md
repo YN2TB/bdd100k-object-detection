@@ -1,23 +1,24 @@
 # Six-model profiling and RTX 3060 optimization plan
 
-Status: implementation in progress; user authorized implementation and delegation.
+Status: profiling complete; smoke/resume and authorized production training pending.
 
 ## Goal
 
 Support and profile six detectors on the fixed BDD100K daytime/clear subset:
 YOLO11s, YOLO11m, YOLO26s, Faster R-CNN R50-FPN v2, RT-DETR-l, and RF-DETR
-Small. Produce measured RTX 3060 12 GB configurations and complete smoke/resume
-validation without starting new 50-epoch production runs.
+Small. Produce measured RTX 3060 12 GB configurations, complete smoke/resume
+validation, then train the five unfinished models for 50 epochs sequentially.
 
 ## Fixed decisions
 
 - Add all three proposed models: YOLO11m, YOLO26s, and RF-DETR Small.
-- Profile and smoke only; do not launch full training automatically.
+- After code is committed and pushed, run the five authorized 50-epoch jobs
+  sequentially on the GPU and report progress every hour.
 - Preserve the completed 50-epoch RT-DETR-l run as the baseline. Do not retrain it.
 - Keep each backend's native preprocessing, optimizer, augmentation, and input
   policy. Report actual tensor shapes and recipe differences.
-- Optimize for stable throughput with at least 10% total VRAM headroom. Do not
-  maximize allocation merely to fill memory.
+- Prioritize training throughput up to 95% sampled total VRAM. Prefer lower
+  memory only when measured throughput is within 1% of the fastest candidate.
 - Never change resolution after OOM. Select the next smaller tested batch.
 - Do not modify dataset manifests, source images, annotations, or class order.
 
@@ -86,8 +87,8 @@ validation without starting new 50-epoch production runs.
   the backend exposes it.
 - Batch candidates: YOLO11s and YOLO26s `8,16,32,64`; YOLO11m `4,8,16,32`;
   Faster R-CNN `2,4,8,16`; RF-DETR Small `1,2,4,8,16`. RT-DETR-l retains batch 8.
-- Reject OOM, non-finite loss, validation OOM, or total GPU memory above 90%.
-  Choose maximum throughput; within 3%, choose lower memory use.
+- Reject OOM, non-finite loss, validation OOM, or total GPU memory above 95%.
+  Choose maximum throughput; within 1%, choose lower memory use.
 - After batch selection, test workers `0,4,8` with prefetch 2; test prefetch 4 only
   for the best nonzero worker count. Try RAM cache only when utilization is below
   80% and data wait exceeds 20%, and retain it only for a gain of at least 5% with

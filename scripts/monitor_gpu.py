@@ -31,7 +31,10 @@ def main() -> None:
     out = resolve_output(args.out, args.run_dir.resolve() / "logs/gpu.csv")
     out.parent.mkdir(parents=True, exist_ok=True)
     with out.open("x", encoding="utf-8", newline="", buffering=1) as output:
-        csv.writer(output).writerow(["timestamp", "gpu_util_percent", "device_memory_used_mib", "temperature_c"])
+        csv.writer(output).writerow([
+            "timestamp", "gpu_util_percent", "device_memory_used_mib",
+            "device_memory_total_mib", "temperature_c", "power_draw_w", "power_limit_w",
+        ])
         while True:
             try:
                 if (not process.is_running() or process.create_time() != created
@@ -40,7 +43,8 @@ def main() -> None:
             except psutil.NoSuchProcess:
                 break
             result = subprocess.run([
-                "nvidia-smi", "--query-gpu=timestamp,utilization.gpu,memory.used,temperature.gpu",
+                "nvidia-smi",
+                "--query-gpu=timestamp,utilization.gpu,memory.used,memory.total,temperature.gpu,power.draw,power.limit",
                 "--format=csv,noheader,nounits",
             ], capture_output=True, text=True)
             if result.returncode:

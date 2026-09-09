@@ -4,10 +4,30 @@ Updated: 2026-09-09
 
 ## Acceptance status
 
-Review fixes have been applied; CPU regression and cache integration tests pass. Final independent
-review remains pending because the reviewer hit a usage limit. Full-data two-epoch
-stop/resume acceptance has not completed for any of the five unfinished models.
-No new training runs were launched during this continuation.
+Review fixes have been applied; CPU regression and cache integration tests pass.
+Corrected timing-schema-3 GPU profiling is complete for all five unfinished
+models. Full-data two-epoch stop/resume acceptance has not completed yet.
+
+## Current RTX 3060 selections
+
+Source: `runs/profile/official-v3/summary.json`. Selection prioritizes measured
+throughput up to 95% sampled total VRAM and uses lower memory only within a 1%
+throughput tie. Every selected configuration passed training and validation
+probes without OOM or non-finite values.
+
+| Model | Batch | Workers | Prefetch | Cache | Images/s | Peak device MiB | Peak VRAM |
+|---|---:|---:|---:|---|---:|---:|---:|
+| YOLO11s | 32 | 4 | 2 | none | 95.07 | 10,035 | 81.67% |
+| YOLO11m | 16 | 8 | 4 | none | 43.29 | 9,914 | 80.68% |
+| YOLO26s | 16 | 4 | 4 | none | 71.93 | 7,116 | 57.91% |
+| Faster R-CNN R50-FPN v2 | 16 | 4 | 2 | none | 17.15 | 8,239 | 67.05% |
+| RF-DETR Small | 8 | 4 | 2 | none | 20.64 | 9,212 | 74.97% |
+
+YOLO26s batch 32 reached 49.00 images/s in the workers-0 sweep but used 96.61%
+sampled total VRAM, so it was excluded. No selected result met both conditional
+RAM-cache triggers; no cache trial was needed. The first Faster R-CNN sweep
+exposed an uninitialized loader-wait buffer, which was fixed with a regression
+test before rerunning all four batch candidates successfully.
 
 The saved profiling sweep below is historical evidence, not an approved hardware
 configuration. Review found that step timing excluded data-loader wait, making
@@ -64,7 +84,6 @@ resolved dependencies in `requirements-rfdetr-lock.txt`.
 Still required before declaring the plan complete:
 
 - Finish independent review of the applied fixes.
-- Re-run corrected profiling, including implemented conditional RAM-cache trials where triggered.
 - Run five full-data epoch-1 stop / epoch-2 resume smoke experiments with a
   50-epoch schedule horizon, each in its own output directory.
 - Record measured epoch/setup/validation times and an ETA with a ±30% interval.
@@ -110,5 +129,6 @@ Final commands for this continuation:
   exit 0, the RF-DETR integration test passed in its isolated environment.
 - Training entrypoint `--help`, compilation and `git diff --check`: exit 0.
 
-No GPU profiling, smoke training, production training or commits were performed.
-Independent final review remains unavailable because of the recorded usage limit.
+The corrected GPU profiling artifacts are stored under `runs/profile/official-v3/`.
+Smoke and production training remain pending at this checkpoint. Independent
+final review remains unavailable because of the recorded usage limit.

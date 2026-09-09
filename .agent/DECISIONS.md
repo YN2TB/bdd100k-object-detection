@@ -97,3 +97,10 @@ and RF-DETR Small. Commit and push the implementation branch before starting GPU
 work. Keep the completed RT-DETR-l baseline untouched. Run only one training or
 profiling workload on the RTX 3060 at a time. Enable the existing hourly reporting
 cadence when the first new run starts.
+
+## 2026-09-09: Prefer training speed in hardware selection
+
+The user prioritizes training speed and does not require conservative GPU/VRAM
+limits. Select the fastest valid measured configuration up to 95% sampled total
+VRAM; use lower memory only for candidates within 1% throughput. OOM, non-finite
+loss, validation failure, and candidates above the ceiling remain ineligible.

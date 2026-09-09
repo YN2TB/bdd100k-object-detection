@@ -101,3 +101,19 @@ That integration test passed under `.venv-rfdetr`. Both environments passed
 image bytes passed validation. Python compilation, CLI help, and `git diff
 --check` passed. The RTX 3060 was visible with 12,288 MiB VRAM. No new GPU workload
 had been launched at this checkpoint.
+
+## Corrected GPU profiling
+
+Timing-schema-3 profiling completed under `runs/profile/official-v3/` for all
+five unfinished models. Selected batch/workers/prefetch are YOLO11s 32/4/2,
+YOLO11m 16/8/4, YOLO26s 16/4/4, Faster R-CNN 16/4/2, and RF-DETR Small 8/4/2.
+All use `cache=none`; conditional cache triggers were not met. Peak sampled VRAM
+was 81.67%, 80.68%, 57.91%, 67.05%, and 74.97%, respectively. YOLO26s batch 32
+was excluded at 96.61% VRAM. The user superseded the earlier 90%/3% policy with
+speed-first selection up to 95% VRAM and a 1% throughput tie.
+
+The initial Faster R-CNN sweep failed because `data_wait` was constructed after
+its first use. A regression test reproduced the ordering defect; moving the
+buffer initialization before `TimedLoader` fixed it, and all FRCNN batches and
+worker variants then completed. Before any smoke or production training, verify,
+commit, and push this supplemental policy/probe/monitor change.

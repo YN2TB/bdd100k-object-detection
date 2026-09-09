@@ -98,7 +98,9 @@ class RFDETRContractTests(unittest.TestCase):
         self.assertFalse(values["run_test"])
         self.assertFalse(values["early_stopping"])
         self.assertEqual(values["resolution"], 512)
-        self.assertEqual(values["checkpoint_interval"], 1)
+        # RF-DETR skips its per-epoch last.ckpt callback when this is 1.
+        # An interval above 1 keeps last.ckpt resumable after every epoch.
+        self.assertEqual(values["checkpoint_interval"], 2)
         self.assertEqual(values["device"], "cuda")
 
     def test_lightweight_or_incomplete_checkpoint_cannot_resume(self):

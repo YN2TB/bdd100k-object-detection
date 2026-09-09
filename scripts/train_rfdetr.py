@@ -52,7 +52,10 @@ def build_train_kwargs(*, adapter: Path, out: Path, epochs: int, batch: int,
         # comparison contract is seed 0, so pass it explicitly to the native
         # trainer rather than relying on a process-level seed.
         "seed": 0,
-        "checkpoint_interval": 1, "run_test": False,
+        # RF-DETR 1.10.1 suppresses its latest-checkpoint callback when the
+        # archive interval is 1.  An interval of 2 keeps an atomic last.ckpt
+        # every epoch for stop/resume while retaining periodic archives.
+        "checkpoint_interval": 2, "run_test": False,
         "early_stopping": False, "class_names": list(__import__(
             "bddcv.constants", fromlist=["DET_CLASSES"]
         ).DET_CLASSES),

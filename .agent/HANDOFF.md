@@ -117,3 +117,27 @@ its first use. A regression test reproduced the ordering defect; moving the
 buffer initialization before `TimedLoader` fixed it, and all FRCNN batches and
 worker variants then completed. Before any smoke or production training, verify,
 commit, and push this supplemental policy/probe/monitor change.
+
+## Active training queue
+
+Commit `0829aa9` (`Prioritize training throughput in GPU profiles`) was pushed to
+`origin/codex/add-model-profiling` before training. The sequential queue is now
+running independently as user service `bddcv-remaining-models-v2.service` from
+`runs/control/remaining-models-queue.sh`. Current state and event history are in
+`runs/control/remaining-models-current.tsv` and
+`runs/control/remaining-models-events.tsv`; per-stage launcher and GPU telemetry
+are under `runs/control/stage-logs/`.
+
+The first detached attempt was cleaned up by the tool environment. The first
+systemd attempt then failed before training because the queue created an output
+`logs/` directory ahead of the trainer's fresh-output guard. Its evidence was
+moved to `runs/control/failed-launch-yolo11s-20260909-0930/`. The queue now keeps
+launcher/monitor files under `runs/control`, leaving fresh run outputs empty.
+The v2 service was verified active with YOLO11s smoke epoch 1 on the GPU at
+batch/workers/prefetch 32/4/2. Initial telemetry showed 100% utilization,
+9,581/12,288 MiB device memory, 62 C, and 148.77/170 W.
+
+The existing hourly automation was updated and enabled as
+`BDD CV: báo train mỗi giờ`, targeting this task. It monitors the queue and
+reports progress/ETA/GPU telemetry in Vietnamese, pauses on failure or verified
+completion, never launches duplicates, and never retrains completed RT-DETR-l.

@@ -8,12 +8,9 @@ from __future__ import annotations
 
 import argparse
 import json
-import os
-import signal
 import sys
-import threading
-import time
 from pathlib import Path
+from typing import Callable
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
@@ -82,20 +79,36 @@ def validate_full_checkpoint(path: Path, checkpoint: dict) -> int:
     return int(checkpoint["epoch"]) + 1
 
 
-def _stop_after_checkpoint(path: Path, target_epoch: int, done: threading.Event) -> None:
-    """Interrupt after Lightning has atomically published the requested epoch."""
-    import torch
-    while not done.wait(1):
-        if not path.exists():
-            continue
-        try:
-            checkpoint = torch.load(path, map_location="cpu", weights_only=False)
-            completed = validate_full_checkpoint(path, checkpoint)
-        except (OSError, RuntimeError, EOFError, RFDETRAdapterError):
-            continue
-        if completed >= target_epoch:
-            os.kill(os.getpid(), signal.SIGINT)
-            return
+def build_stop_after_epoch_callback(
+    target_epoch: int, *, callback_base: type | None = None,
+) -> object:
+    """Build a Lightning callback that stops cleanly after a completed epoch."""
+    if callback_base is None:
+        from pytorch_lightning import Callback
+        callback_base = Callback
+
+    class StopAfterEpochCallback(callback_base):
+        def on_validation_end(self, trainer, pl_module) -> None:
+            # Lightning also calls this hook during its pre-training validation
+            # sanity check, which must never consume the requested smoke epoch.
+            if getattr(trainer, "sanity_checking", False):
+                return
+            if int(trainer.current_epoch) + 1 >= target_epoch:
+                trainer.should_stop = True
+
+    return StopAfterEpochCallback()
+
+
+def append_trainer_callback(
+    build_trainer: Callable[..., object], callback: object,
+) -> Callable[..., object]:
+    """Wrap RF-DETR's trainer factory and append a native callback last."""
+    def wrapped(*args, **kwargs):
+        trainer = build_trainer(*args, **kwargs)
+        trainer.callbacks.append(callback)
+        return trainer
+
+    return wrapped
 
 
 def main() -> int:
@@ -156,29 +169,22 @@ def main() -> int:
             resume=resume_path,
         )
         kwargs["prefetch_factor"] = args.prefetch
-        stop = threading.Event()
-        watcher = None
-        if args.stop_after_epoch:
-            watcher = threading.Thread(
-                target=_stop_after_checkpoint,
-                args=(out / "last.ckpt", args.stop_after_epoch, stop), daemon=True,
-            )
-            watcher.start()
-        interrupted = False
         import rfdetr.training as training
         original_datamodule = training.RFDETRDataModule
+        original_build_trainer = training.build_trainer
         if args.cache == "ram":
             from bddcv.cache import cached_rfdetr_datamodule
             training.RFDETRDataModule = cached_rfdetr_datamodule(original_datamodule)
+        if args.stop_after_epoch:
+            stop_callback = build_stop_after_epoch_callback(args.stop_after_epoch)
+            training.build_trainer = append_trainer_callback(
+                original_build_trainer, stop_callback,
+            )
         try:
             model.train(**kwargs)
-        except KeyboardInterrupt:
-            interrupted = True
         finally:
             training.RFDETRDataModule = original_datamodule
-            stop.set()
-            if watcher:
-                watcher.join(timeout=2)
+            training.build_trainer = original_build_trainer
     except (RFDETRAdapterError, RFDETRBackendUnavailable, ImportError, OSError,
             RuntimeError, ValueError) as exc:
         status = {"status": "blocked", "model_id": args.model_id, "reason": str(exc)}
@@ -199,7 +205,10 @@ def main() -> int:
         "target_epochs": args.epochs, "config": config,
     }
     (out / "run_status.json").write_text(json.dumps(status, indent=2) + "\n", encoding="utf-8")
-    return 0 if complete or interrupted else 2
+    controlled_stop = bool(
+        args.stop_after_epoch and completed_epoch >= args.stop_after_epoch
+    )
+    return 0 if complete or controlled_stop else 2
 
 
 if __name__ == "__main__":

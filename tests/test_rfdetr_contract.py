@@ -5,12 +5,14 @@ import sys
 import tempfile
 import unittest
 from pathlib import Path
+from types import SimpleNamespace
 from unittest.mock import patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 from bddcv.constants import DET_CLASSES
 from bddcv.rfdetr import RFDETRAdapter, RFDETRAdapterError, isolated_python
 from bddcv.paths import CACHE_DIR, prepare_rfdetr_runtime
+from scripts import train_rfdetr
 from scripts.train_rfdetr import build_train_kwargs, validate_full_checkpoint
 
 
@@ -108,6 +110,42 @@ class RFDETRContractTests(unittest.TestCase):
             validate_full_checkpoint(Path("checkpoint_best_total.pth"), {})
         with self.assertRaises(RFDETRAdapterError):
             validate_full_checkpoint(Path("last.ckpt"), {"epoch": 0})
+
+    def test_native_callback_stops_after_requested_epoch(self):
+        class Callback:
+            pass
+
+        callback = train_rfdetr.build_stop_after_epoch_callback(
+            2, callback_base=Callback,
+        )
+        trainer = SimpleNamespace(
+            current_epoch=1, should_stop=False, sanity_checking=True,
+        )
+        callback.on_validation_end(trainer, None)
+        self.assertFalse(trainer.should_stop)
+
+        trainer.sanity_checking = False
+        trainer.current_epoch = 0
+        callback.on_validation_end(trainer, None)
+        self.assertFalse(trainer.should_stop)
+
+        trainer.current_epoch = 1
+        callback.on_validation_end(trainer, None)
+        self.assertTrue(trainer.should_stop)
+
+    def test_trainer_wrapper_appends_native_stop_callback(self):
+        trainer = SimpleNamespace(callbacks=[])
+        callback = object()
+        calls = []
+
+        def build_trainer(*args, **kwargs):
+            calls.append((args, kwargs))
+            return trainer
+
+        wrapped = train_rfdetr.append_trainer_callback(build_trainer, callback)
+        self.assertIs(wrapped("config", devices=1), trainer)
+        self.assertEqual(trainer.callbacks, [callback])
+        self.assertEqual(calls, [(('config',), {"devices": 1})])
 
 
 if __name__ == "__main__":

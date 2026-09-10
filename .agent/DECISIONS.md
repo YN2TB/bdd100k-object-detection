@@ -110,5 +110,13 @@ loss, validation failure, and candidates above the ceiling remain ineligible.
 Use RF-DETR `checkpoint_interval=2`. In RF-DETR 1.10.1, an interval of 1
 suppresses the separate latest-checkpoint callback and produces only numbered
 archives. An interval of 2 preserves periodic archives while atomically updating
-full-state `last.ckpt` every epoch for watcher stops, supervisor progress, and
+full-state `last.ckpt` every epoch for controlled stops, supervisor progress, and
 faithful resume.
+
+## 2026-09-10: Stop RF-DETR smoke runs through Lightning
+
+Use a native PyTorch Lightning callback for bounded RF-DETR smoke runs. Append it
+after RF-DETR constructs its trainer and checkpoint callbacks, ignore validation
+sanity checks, and set `trainer.should_stop=True` after the requested completed
+epoch. Do not use a background signal watcher: `SIGINT` did not stop RF-DETR's
+Lightning loop reliably and allowed the smoke run to exceed its target.

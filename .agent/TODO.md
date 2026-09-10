@@ -8,7 +8,8 @@ Active execution plan:
   selections are in `runs/profile/official-v3/summary.json`.
 - [x] Evaluate conditional RAM-cache triggers on GPU; no selected profile met
   both trigger conditions, so all resolved profiles use `cache=none`.
-- [ ] Run two-epoch full-data stop/resume validation for five unfinished models.
+- [ ] Finish RF-DETR Small two-epoch full-data stop/resume validation. YOLO11s,
+  YOLO26s, YOLO11m, and Faster R-CNN have passed both smoke stages.
 - [ ] Record resolved recipes, measured epoch/setup/validation times and ETA.
 - [ ] Complete final independent acceptance review and archive the plan only
   after its GPU profiling and smoke criteria pass.

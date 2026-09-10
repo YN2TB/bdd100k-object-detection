@@ -1,6 +1,6 @@
 # Handoff
 
-Updated: 2026-09-09
+Updated: 2026-09-10
 
 ## Latest work
 
@@ -157,3 +157,28 @@ isolated integration skip; the isolated RF-DETR cache integration test passed in
 running independently as `bddcv-remaining-models-v3.service`, starting directly
 at fresh RF-DETR epoch-1 smoke; earlier successful smoke runs were not repeated.
 The hourly automation is active again and references the v3 service.
+
+## RF-DETR native stop repair and queue v4
+
+Queue v3 exposed a second, separate smoke-control defect. Its full-state
+`last.ckpt` was valid, but the background watcher sent `SIGINT` and PyTorch
+Lightning did not stop at the requested epoch; the run continued through epoch 6.
+The later `DataLoader worker ... terminated` status was caused by deliberately
+stopping the service after detecting this overrun. No production stage started.
+Evidence is preserved under
+`runs/control/failed-rfdetr-signal-stop-20260909-2053/`.
+
+Commit `384b161` replaces the signal watcher with a native Lightning callback
+that sets `trainer.should_stop` after validation at the requested epoch and skips
+Lightning's pre-training sanity check. The callback is appended after RF-DETR's
+checkpoint callbacks, so `last.ckpt` is published before the clean stop. The
+main suite passed 91 tests with one isolated integration skip, and the callback
+was confirmed to inherit Lightning's `Callback` in `.venv-rfdetr`. The commit was
+pushed before GPU execution.
+
+Queue v4 is active as `bddcv-remaining-models-v4.service`, starting from a fresh
+RF-DETR epoch-1 smoke at 2026-09-10 10:49 Asia/Ho_Chi_Minh. Its initial telemetry
+showed 100% GPU utilization and 9,207/12,288 MiB VRAM. On successful epoch-1 and
+resume-to-epoch-2 acceptance, the same queue automatically begins the five
+authorized production runs in order. The hourly automation is active and now
+references queue v4 and commit `384b161`.

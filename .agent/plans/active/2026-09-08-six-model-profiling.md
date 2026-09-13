@@ -1,6 +1,7 @@
 # Six-model profiling and RTX 3060 optimization plan
 
-Status: profiling complete; smoke/resume and authorized production training pending.
+Status: profiling, smoke/resume, production training, and centralized evaluation
+complete; final independent review pending.
 
 ## Goal
 

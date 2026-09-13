@@ -1,6 +1,6 @@
 # Handoff
 
-Updated: 2026-09-10
+Updated: 2026-09-13
 
 ## Latest work
 
@@ -182,3 +182,22 @@ showed 100% GPU utilization and 9,207/12,288 MiB VRAM. On successful epoch-1 and
 resume-to-epoch-2 acceptance, the same queue automatically begins the five
 authorized production runs in order. The hourly automation is active and now
 references queue v4 and commit `384b161`.
+
+## Production completion and centralized ranking
+
+Queue v4 completed all remaining smoke/resume checks and all five authorized
+50-epoch production runs on 2026-09-11. RT-DETR-l remains the preserved baseline;
+it was not retrained. The completion sequence and elapsed training times were
+YOLO11s 1.83 h, YOLO26s 2.32 h, YOLO11m 4.00 h, Faster R-CNN 10.52 h, and
+RF-DETR Small 8.03 h. `runs/control/remaining-models-events.tsv` ends with a
+`COMPLETE` queue record.
+
+Centralized evaluation completed on 2026-09-13 for all six best checkpoints.
+All predictions use the same 1,764-image validation split, confidence 0.001,
+maximum 300 exported detections per image, and `bddcv.evaluation`. The headline
+metric excludes only the sparse `train` class. Ranking: RT-DETR-l 0.3612,
+YOLO11m 0.3243, RF-DETR Small 0.3025, YOLO26s 0.3008, YOLO11s 0.2851, and Faster
+R-CNN 0.2623. See `docs/model-ranking.md` and
+`runs/evaluation/official-v1/metrics.json`. Prediction coverage, IDs, categories,
+finite values, checkpoint hashes, metadata, rank ordering, and the nine-class
+policy passed validation. Final independent code review remains outstanding.

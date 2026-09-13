@@ -19,7 +19,8 @@
 ## Active
 
 - [2026-09-08: six-model profiling and RTX 3060 optimization](plans/active/2026-09-08-six-model-profiling.md)
-  — implementation in progress; profiling and smoke acceptance remain outstanding.
+  — implementation, profiling, smoke/resume, production training, and centralized
+  evaluation complete; final independent review remains outstanding.
 
 ## Archive
 

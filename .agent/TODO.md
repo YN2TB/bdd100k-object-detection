@@ -8,9 +8,9 @@ Active execution plan:
   selections are in `runs/profile/official-v3/summary.json`.
 - [x] Evaluate conditional RAM-cache triggers on GPU; no selected profile met
   both trigger conditions, so all resolved profiles use `cache=none`.
-- [ ] Finish RF-DETR Small two-epoch full-data stop/resume validation. YOLO11s,
+- [x] Finish RF-DETR Small two-epoch full-data stop/resume validation. YOLO11s,
   YOLO26s, YOLO11m, and Faster R-CNN have passed both smoke stages.
-- [ ] Record resolved recipes, measured epoch/setup/validation times and ETA.
+- [x] Record resolved recipes, measured epoch/setup/validation times and ETA.
 - [ ] Complete final independent acceptance review and archive the plan only
   after its GPU profiling and smoke criteria pass.
 
@@ -24,8 +24,10 @@ Implemented repairs requiring runtime acceptance:
 - [ ] RESUME-1: reconcile CSV progress with checkpoint epoch.
 - [ ] RESUME-2: distinguish early clean stop from completed budget.
 - [ ] REPRO-1: define Faster R-CNN seed/RNG resume policy.
-- [ ] PRED-1: consolidate prediction and define empty-output evaluation.
-- [ ] PRED-2: verified RT-DETR prediction export for centralized evaluation.
+- [x] PRED-1: consolidate prediction and define empty-output evaluation.
+- [x] PRED-2: verified RT-DETR prediction export for centralized evaluation.
+- [x] Evaluate and rank all six best checkpoints through the centralized COCO path;
+  see `docs/model-ranking.md` and `runs/evaluation/official-v1/`.
 
 Deferred beyond the active plan:
 

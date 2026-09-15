@@ -196,6 +196,9 @@ Pre-launch evidence and correction:
 - Validation export is now capped at 100 detections per image, matching COCO
   `maxDets=100`. A worst-case full-validation smoke passed in 108 seconds with
   6,834,448 KiB maximum RSS and exit 0, down from the failed attempt's 10.7 GiB.
+- Acceptance passed, local commit `d5e4f38` was created, and the user explicitly
+  confirmed the configured GitHub remote. Commit `d5e4f38` was pushed successfully
+  to `origin/codex/add-model-profiling`. No training ran before that push.
 
 ### 6. Test prediction and evaluation — pending
 
@@ -214,5 +217,5 @@ Pre-launch evidence and correction:
 
 ## Current blocker
 
-The publication gate remains: full tests must pass and the implementation must
-be committed and pushed before any clean production run starts.
+None. The passing implementation is published; a clean sequential production run
+may now start.

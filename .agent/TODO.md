@@ -12,9 +12,10 @@ New active execution plan:
 - [x] Bound custom-CNN validation at 100 detections/image; full-val smoke passed.
 - [x] Rerun complete acceptance: 100 tests pass (one expected skip), compilation,
   CLI help, shell syntax, and diff whitespace checks pass.
-- [ ] Commit and push the passing full-data three-model implementation.
-- [ ] Only after a successful push, start a clean sequential train queue and
-  reactivate hourly reporting.
+- [x] Commit the passing implementation locally as `d5e4f38`.
+- [x] Obtain explicit trust confirmation and push `d5e4f38` to the configured
+  GitHub remote.
+- [ ] Start a clean sequential train queue and reactivate hourly reporting.
 - [ ] Predict and centrally evaluate all three models on the 7,986-image test split.
 
 Active execution plan:

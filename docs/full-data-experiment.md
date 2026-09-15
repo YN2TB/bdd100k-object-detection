@@ -37,8 +37,8 @@ initialization differences must be disclosed with final results.
   are 16 for SimpleCNN, 8 for ComplexCNN, and 16 for YOLO11s.
 - Production GPU training: not started validly. An early queue attempt was
   stopped before any epoch checkpoint because it preceded commit/push and exposed
-  excessive custom-validation RAM use. The passing code must be pushed before a
-  clean queue is launched; hourly reporting is paused meanwhile.
+  excessive custom-validation RAM use. That issue is fixed and the passing code
+  is now pushed; a clean queue is ready to launch.
 
 Pre-production RTX 3060 estimates for 30 epochs:
 

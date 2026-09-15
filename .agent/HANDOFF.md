@@ -54,7 +54,11 @@ MiB prediction JSON and reached about 10.7 GiB process memory. Fix and validate
 that issue, commit and push the passing code, and only then start a clean queue.
 The repair caps every validation/test export at 100 detections per image, matching
 COCO `maxDets=100`. A full 15,973-image validation smoke passed in 108 seconds
-with 6,834,448 KiB peak RSS. Full tests and publish remain required before train.
+with 6,834,448 KiB peak RSS.
+The full 100-test suite, compilation, CLI help, shell syntax, and diff checks pass.
+The user explicitly approved the configured GitHub destination and commit
+`d5e4f38` was pushed to `origin/codex/add-model-profiling`. The publication gate
+is satisfied; start the clean queue next.
 
 ## Completed checkpoint: midterm pipeline simplification
 

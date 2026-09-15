@@ -45,14 +45,18 @@ initialization differences must be disclosed with final results.
 - ComplexCNN had completed 13/30 checkpoints at 2026-09-15 15:20 +07 and was
   finishing epoch 14. Its average is about 7.7 minutes/epoch; estimated finish is
   17:25 +07. YOLO11s remains queued.
+- ComplexCNN completed 30/30 epochs in 3 h 51 min with no restart. Its best
+  validation mAP50-95 is 0.019779 at epoch 23.
+- YOLO11s had completed 16/30 checkpoints at 20:25 +07 and was training epoch
+  17. Recent epochs take about 10.8 minutes; estimated finish is 22:55 +07.
 
 Pre-production RTX 3060 estimates for 30 epochs:
 
 | Model | Estimated epoch | Estimated 30 epochs | Confidence |
 |---|---:|---:|---|
 | SimpleCNN | 6.7 min observed | 3 h 20 min observed | complete |
-| ComplexCNN | 7.7 min observed | about 3 h 51 min | high; 13 epochs observed |
-| YOLO11s | 11-18 min | 6-9 h | medium; full validation plus historical throughput |
+| ComplexCNN | 7.7 min observed | 3 h 51 min observed | complete |
+| YOLO11s | 10.8 min observed | about 5 h 24 min | high; 16 epochs observed |
 
 The sequential training total is approximately 19-25 hours, excluding final
 test prediction/evaluation. Replace these ranges with observed epoch timings once

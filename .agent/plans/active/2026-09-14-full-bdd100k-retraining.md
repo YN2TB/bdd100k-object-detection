@@ -212,6 +212,14 @@ Pre-launch evidence and correction:
   completed checkpoints and was finishing epoch 14. Its recent epoch time is
   about 462 seconds and its best validation mAP50-95 so far is 0.019130 at epoch
   13. Estimated ComplexCNN completion is around 17:25 +07.
+- ComplexCNN completed 30/30 epochs at 2026-09-15 17:25 +07 with no restart.
+  Total recorded epoch time was 13,850 seconds (3 h 51 min), averaging 462
+  seconds; its best validation mAP50-95 was 0.019779 at epoch 23.
+- YOLO11s started automatically and had 16/30 completed checkpoints at 20:25
+  +07 (53.3%), while training epoch 17. Its best native validation mAP50-95 so
+  far is 0.28133 at epoch 16, recent epochs take about 647 seconds, and estimated
+  training completion is around 22:55 +07. Peak sampled VRAM is 6,440 MiB;
+  no restart or error is recorded.
 
 ### 6. Test prediction and evaluation — pending
 

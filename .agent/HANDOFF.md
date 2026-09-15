@@ -71,6 +71,14 @@ started next and had 13/30 completed checkpoints at 15:20 +07 while finishing
 epoch 14. It averages about 462 seconds/epoch and its best validation score so
 far is 0.019130 at epoch 13. Estimated ComplexCNN completion is about 17:25 +07.
 
+ComplexCNN completed 30/30 without a restart at 17:25 +07. Recorded epoch time
+totals 13,850 seconds (3 h 51 min), averaging 462 seconds/epoch; its best
+validation mAP50-95 is 0.019779 at epoch 23. YOLO11s then started and had 16/30
+completed checkpoints at 20:25 +07 while training epoch 17. Its best native
+validation mAP50-95 so far is 0.28133, recent epochs take about 647 seconds, and
+estimated completion is 22:55 +07. Peak sampled VRAM is 6,440 MiB and no
+restart/error is recorded.
+
 ## Completed checkpoint: midterm pipeline simplification
 
 The user requested a deliberately simple undergraduate midterm workflow. The

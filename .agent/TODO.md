@@ -18,8 +18,8 @@ New active execution plan:
 - [x] Start the clean sequential train queue after push and reactivate hourly
   reporting (2026-09-15 10:13 +07; SimpleCNN first).
 - [x] Complete all 30 epochs for SimpleCNN (best val mAP50-95 0.002768).
-- [ ] Complete ComplexCNN (13/30 checkpoints at 2026-09-15 15:20 +07) and
-  YOLO11s (queued).
+- [x] Complete all 30 epochs for ComplexCNN (best val mAP50-95 0.019779).
+- [ ] Complete YOLO11s (16/30 checkpoints at 2026-09-15 20:25 +07).
 - [ ] Predict and centrally evaluate all three models on the 7,986-image test split.
 
 Active execution plan:

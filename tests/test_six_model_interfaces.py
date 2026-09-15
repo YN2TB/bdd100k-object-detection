@@ -23,16 +23,20 @@ from bddcv.profiling import (  # noqa: E402
     PROFILE_SCHEMA_VERSION, TIMING_SCHEMA, TIMING_SCHEMA_VERSION,
     ProfileController, ProfileOutcome, ProfileStatus, classify_profile_output, select_profile,
 )
-from bddcv.registry import ModelResolutionError, resolve_model_id, list_models  # noqa: E402
+from bddcv.registry import (  # noqa: E402
+    ModelResolutionError, list_models, list_primary_models, resolve_model_id,
+)
 from bddcv.rfdetr import build_adapter, validate_adapter  # noqa: E402
 
 
 class RegistryTests(unittest.TestCase):
     def test_approved_roster_and_generic_checkpoint_guard(self):
         self.assertEqual(
-            {spec.model_id for spec in list_models()},
-            {"yolo11s", "yolo11m", "yolo26s", "frcnn-r50-fpn-v2", "rtdetr-l", "rfdetr-small"},
+            {spec.model_id for spec in list_primary_models()},
+            {"simple-cnn", "complex-cnn", "yolo11s"},
         )
+        historical = {"yolo11m", "yolo26s", "frcnn-r50-fpn-v2", "rtdetr-l", "rfdetr-small"}
+        self.assertTrue(historical.issubset({spec.model_id for spec in list_models()}))
         with self.assertRaises(ModelResolutionError):
             resolve_model_id(checkpoint="best.pt")
         self.assertEqual(resolve_model_id("rtdetr-l", "best.pt"), "rtdetr-l")

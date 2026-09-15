@@ -20,9 +20,9 @@ from bddcv.prediction import (  # noqa: E402
 )
 from bddcv.registry import ModelResolutionError, resolve_model_spec  # noqa: E402
 
-SUBSET = DATA_DIR / "source_daytime_clear"
-GT = SUBSET / "annotations" / "instances_val.json"
-IMAGES = SUBSET / "images" / "val"
+SUBSET = DATA_DIR / "source_full"
+GT = SUBSET / "annotations" / "instances_test.json"
+IMAGES = SUBSET / "images" / "test"
 
 
 def predict_ultralytics(spec, checkpoint: Path, output: Path, args) -> Path:
@@ -35,7 +35,8 @@ def predict_ultralytics(spec, checkpoint: Path, output: Path, args) -> Path:
     records = []
     stream = model.predict(
         source=str(IMAGES), imgsz=args.imgsz, conf=args.conf, iou=args.iou,
-        max_det=args.max_det, device=args.device, stream=True, verbose=False,
+        max_det=args.max_det, device=args.device, batch=args.batch,
+        stream=True, verbose=False,
         save=False, project=str(output.parent), name=output.stem, exist_ok=True,
     )
     for result in stream:
@@ -57,6 +58,27 @@ def predict_frcnn(spec, checkpoint: Path, output: Path, args) -> Path:
     state = torch.load(checkpoint, map_location=device, weights_only=False)
     model.load_state_dict(state.get("model", state))
     return predict_to_coco(model, loader, device, output)
+
+
+def predict_custom_cnn(spec, checkpoint: Path, output: Path, args) -> Path:
+    import torch
+    from torch.utils.data import DataLoader
+    from bddcv.cnn_detector import (
+        GridDetectionDataset, build_cnn_detector, export_predictions,
+    )
+    prepare_runtime()
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    dataset = GridDetectionDataset(IMAGES, GT)
+    loader = DataLoader(
+        dataset, batch_size=args.batch, shuffle=False, num_workers=args.workers,
+        pin_memory=True,
+    )
+    model = build_cnn_detector(spec.model_id).to(device)
+    state = torch.load(checkpoint, map_location=device, weights_only=False)
+    model.load_state_dict(state["model"])
+    return export_predictions(
+        model, loader, device, output, args.conf, args.iou, args.max_det,
+    )
 
 
 def predict_rfdetr(spec, checkpoint: Path, output: Path, args) -> Path:
@@ -89,7 +111,7 @@ def main() -> int:
     parser.add_argument("--imgsz", type=int, default=None)
     parser.add_argument("--conf", type=float, default=0.001)
     parser.add_argument("--iou", type=float, default=0.7)
-    parser.add_argument("--max-det", type=int, default=300)
+    parser.add_argument("--max-det", type=int, default=100)
     parser.add_argument("--device", default="0")
     parser.add_argument("--batch", type=int, default=4)
     parser.add_argument("--workers", type=int, default=4)
@@ -116,6 +138,8 @@ def main() -> int:
         result = predict_ultralytics(spec, checkpoint, output, args)
     elif spec.backend == "frcnn":
         result = predict_frcnn(spec, checkpoint, output, args)
+    elif spec.backend == "custom_cnn":
+        result = predict_custom_cnn(spec, checkpoint, output, args)
     else:
         result = predict_rfdetr(spec, checkpoint, output, args)
     write_prediction_metadata(

@@ -1,6 +1,102 @@
 # Handoff
 
-Updated: 2026-09-13
+Updated: 2026-09-15
+
+## Active checkpoint: full BDD100K retraining
+
+The user superseded the fixed daytime/clear scope and explicitly authorized a
+new experiment that retrains three models from scratch on every publicly
+labelled BDD100K detection record. The active ExecPlan is
+`.agent/plans/active/2026-09-14-full-bdd100k-retraining.md`.
+
+Checkpoints 0 through 4 are complete. All 79,863 public labelled records were combined
+without time/weather filtering and split with `seed=0` into 55,904 train, 15,973
+validation, and 7,986 test images. All links resolve, the directories match their
+manifests, and pairwise overlap is zero. The finalized roster is a hand-written
+four-block grid detector (`simple-cnn`), a hand-written residual grid detector
+(`complex-cnn`), and YOLO11s (baseline). Both CNNs must output objectness, class,
+and box coordinates and use NMS. The earlier MobileNetV3 Faster R-CNN suggestion
+was withdrawn because a two-stage R-CNN is not a simple CNN. Keep the
+old subset and all old artifacts unchanged. Full source images and raw labels are
+already local, so no download is needed. NVIDIA-SMI and a CUDA tensor kernel now
+pass on the RTX 3060.
+
+The superseded 62,877/6,986/10,000 link-only view is temporarily preserved at
+`data/source_full_90_10_superseded`; it was never labelled or trained. Next:
+generate and verify YOLO/COCO labels for the final three splits, then update the
+three-model trainers and primary config.
+
+Full label conversion has completed: train has 1,029,446 retained boxes,
+validation 295,515, and test 146,998. One exact duplicate validation annotation
+was removed from both COCO and YOLO outputs. All ten classes occur in every split. No
+training has started. The next required decision is whether the assignment expects
+object-level bounding boxes plus classes. The user confirmed the detector design;
+implement the two custom CNNs and keep all three models on common COCO metrics.
+
+Checkpoints 2 and 3 are complete. `src/bddcv/cnn_detector.py` implements the
+408,171-parameter SimpleCNN and 11,190,123-parameter residual ComplexCNN with a
+shared five-slot grid head, loss, class-aware NMS, and COCO export.
+`scripts/train_cnn.py` trains either model and atomically saves best/last complete
+resume state. Unified prediction and evaluation target the held-out test split.
+All 100 tests pass with one expected historical RF-DETR environment skip. Both
+CNNs completed CPU smoke epochs; SimpleCNN resume reached epoch 2. Full numeric
+label verification passed with zero mismatches and the test montage was visually
+correct. README and `docs/full-data-experiment.md` contain current commands.
+
+GPU smoke runs passed sequentially with batch 16 for SimpleCNN, batch 8 for
+ComplexCNN, and batch 16 for YOLO11s. YOLO's smoke peaked at about 4.1 GB
+allocated VRAM. The full label verifier passes 1,471,959 boxes with zero
+mismatches after common deduplication. A sequential production queue was started
+too early at 2026-09-15 09:44 +07, before commit/push. It is stopped and hourly
+monitoring is paused. No epoch checkpoint was produced, so that attempt is not
+valid experiment evidence. It did reveal that custom validation created a 439
+MiB prediction JSON and reached about 10.7 GiB process memory. Fix and validate
+that issue, commit and push the passing code, and only then start a clean queue.
+The repair caps every validation/test export at 100 detections per image, matching
+COCO `maxDets=100`. A full 15,973-image validation smoke passed in 108 seconds
+with 6,834,448 KiB peak RSS. Full tests and publish remain required before train.
+
+## Completed checkpoint: midterm pipeline simplification
+
+The user requested a deliberately simple undergraduate midterm workflow. The
+completed plan is `.agent/plans/archive/2026-09-14-midterm-pipeline-simplification.md`.
+Do not introduce a CLI framework, config hierarchy, CI, serving layer, or new
+training abstraction.
+
+All four checkpoints are complete. `scripts/prepare_data.py` now rejects manifest drift
+before subset writes and extracts raw labels with bounded atomic copies.
+`scripts/build_labels.py` validates duplicate/missing manifest-to-raw coverage
+and image presence before writes. `scripts/verify_labels.py` checks every COCO
+image, including empty-label images, and returns failure status. README now
+presents the five-step course pipeline and marks profiling/monitoring/migration
+as optional.
+
+Four focused tests pass. The full main suite passes 95 tests with one expected
+RF-DETR-environment skip. Python compilation passes. Real label verification
+passes for 34,096 val and 239,901 train boxes with 0.006 px maximum deviation;
+the montage was inspected and boxes align visually. SHA-256 values for both
+tracked manifests and `docs/model-ranking.md` were identical before and after.
+
+Read-only preflight accepted exact manifest/raw/image coverage for both splits.
+The existing official YOLO11s prediction evaluated through the centralized path
+at reliable-class mAP50-95 0.2851, matching the published ranking. No prediction,
+label, training, or production artifact was regenerated.
+
+Checkpoint 5 is complete. Evaluation output now shows mAP50-95, mAP50, mAP75,
+AP by object size, AR@100, reliable-class mAP, and per-class AP. The official
+YOLO11s prediction still reports overall mAP50-95 0.2566, reliable-class mAP
+0.2851, and AR@100 0.3537. Do not add custom threshold-dependent accuracy/F1,
+regenerate predictions, or launch GPU work.
+
+Checkpoint 6 is complete. The final main suite passed 95 tests with one expected
+RF-DETR-environment skip; compilation and `git diff --check` passed. Protected
+manifest and ranking hashes remain unchanged. The next repository task remains
+the independent acceptance review for the older six-model plan.
+
+Checkpoint 7 is complete. All six saved prediction JSON files were re-evaluated
+through `bddcv.evaluation` on 2026-09-14 without regenerating predictions. The
+full essential-metrics table, now including AR@100, is in
+`docs/model-ranking.md`; the reliable-class ordering is unchanged.
 
 ## Latest work
 

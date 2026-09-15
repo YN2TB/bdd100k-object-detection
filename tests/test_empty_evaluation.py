@@ -8,7 +8,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 from bddcv.constants import DET_CLASSES
-from bddcv.evaluation import evaluate
+from bddcv.evaluation import evaluate, format_report
 
 
 class EmptyEvaluationTests(unittest.TestCase):
@@ -31,6 +31,9 @@ class EmptyEvaluationTests(unittest.TestCase):
             self.assertEqual(result["overall"]["mAP50_95_reliable_classes"], 0)
             self.assertEqual(result["overall"]["n_reliable_classes"], 1)
             self.assertTrue(math.isnan(result["per_class"][DET_CLASSES[1]]["AP50_95"]))
+            report = format_report(result, "Empty model")
+            self.assertIn("mAP reliable", report)
+            self.assertIn("AR@100", report)
 
 
 if __name__ == "__main__":

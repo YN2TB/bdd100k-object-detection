@@ -13,6 +13,13 @@ data/source_daytime_clear/*
 !data/source_daytime_clear/train_images.txt
 !data/source_daytime_clear/val_images.txt
 
+# Full labelled experiment: keep only deterministic manifests.
+!data/source_full/
+data/source_full/*
+!data/source_full/train_images.txt
+!data/source_full/val_images.txt
+!data/source_full/test_images.txt
+
 # Training runs: checkpoints, logs, plots
 runs/
 datasets/

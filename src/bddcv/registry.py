@@ -62,9 +62,19 @@ class ModelSpec:
         return value
 
 
-# Keep this table in canonical experiment order.  DET_CLASSES remains the
-# source of class order; this order is only the approved model roster.
+# Keep historical entries readable, while PRIMARY_MODEL_IDS defines the new
+# three-model course comparison.
 MODEL_REGISTRY: dict[str, ModelSpec] = {
+    "simple-cnn": ModelSpec(
+        "simple-cnn", "custom_cnn", "simple-cnn.pt", "640x360 resize", 30,
+        (8, 16, 32), "amp", output_subdir="simple-cnn", optimizer="Adam",
+        schedule="constant", augmentation="horizontal flip",
+    ),
+    "complex-cnn": ModelSpec(
+        "complex-cnn", "custom_cnn", "complex-cnn.pt", "640x360 resize", 30,
+        (4, 8, 16), "amp", output_subdir="complex-cnn", optimizer="Adam",
+        schedule="constant", augmentation="horizontal flip",
+    ),
     "yolo11s": ModelSpec(
         "yolo11s", "ultralytics", "yolo11s.pt", "640 letterbox", 50,
         (8, 16, 32, 64), "amp", output_subdir="yolo11s",
@@ -102,6 +112,8 @@ MODEL_REGISTRY: dict[str, ModelSpec] = {
     ),
 }
 
+PRIMARY_MODEL_IDS = ("simple-cnn", "complex-cnn", "yolo11s")
+
 # A read-only-friendly alias is useful to callers and makes the public API
 # explicit without exposing a mutable implementation detail.
 MODEL_SPECS = MODEL_REGISTRY
@@ -113,6 +125,11 @@ MODELS = MODEL_REGISTRY
 def list_models() -> tuple[ModelSpec, ...]:
     """Return the approved roster in deterministic order."""
     return tuple(MODEL_REGISTRY.values())
+
+
+def list_primary_models() -> tuple[ModelSpec, ...]:
+    """Return only the three models used by the current course report."""
+    return tuple(MODEL_REGISTRY[model_id] for model_id in PRIMARY_MODEL_IDS)
 
 
 def get_model_spec(model_id: str) -> ModelSpec:
@@ -246,9 +263,10 @@ def write_model_metadata(path: str | Path, spec: ModelSpec, **extra: Any) -> Pat
 
 
 __all__ = [
-    "REGISTRY_VERSION", "MODEL_REGISTRY", "MODEL_SPECS", "MODEL_IDS", "model_registry", "MODELS",
+    "REGISTRY_VERSION", "MODEL_REGISTRY", "MODEL_SPECS", "MODEL_IDS", "PRIMARY_MODEL_IDS",
+    "model_registry", "MODELS",
     "ModelResolutionError", "ModelSpec", "backend_for_model", "resolve_backend",
-    "get_model_spec", "get_model", "list_models",
+    "get_model_spec", "get_model", "list_models", "list_primary_models",
     "metadata_path_for_checkpoint", "resolve_model_id", "resolve_model_spec",
     "write_model_metadata",
 ]

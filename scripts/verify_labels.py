@@ -21,7 +21,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 from bddcv.constants import DATA_DIR, DET_CLASSES  # noqa: E402
 from bddcv.paths import VERIFICATION_DIR  # noqa: E402
 
-SUBSET_DIR = DATA_DIR / "source_daytime_clear"
+SUBSET_DIR = DATA_DIR / "source_full"
 TOL = 1.0  # pixels; YOLO txt is written at 6dp so round-trip error is sub-pixel
 
 PALETTE = [
@@ -30,26 +30,34 @@ PALETTE = [
 ]
 
 
-def numeric_check(split: str) -> None:
+def numeric_check(split: str) -> bool:
     coco = json.loads((SUBSET_DIR / "annotations" / f"instances_{split}.json").read_text())
     by_image = defaultdict(list)
     for a in coco["annotations"]:
         by_image[a["image_id"]].append(a)
-    meta = {im["id"]: im for im in coco["images"]}
 
     checked = worst = 0
     mismatch = []
-    for img_id, anns in by_image.items():
-        im = meta[img_id]
+    for im in coco["images"]:
+        img_id = im["id"]
+        anns = by_image[img_id]
         w, h = im["width"], im["height"]
         txt = SUBSET_DIR / "labels" / split / f"{Path(im['file_name']).stem}.txt"
+        if not txt.is_file():
+            mismatch.append(f"{im['file_name']}: missing YOLO label file")
+            continue
+
         yolo = []
-        for line in txt.read_text().split("\n"):
-            if not line.strip():
-                continue
-            c, xc, yc, bw, bh = line.split()
-            c, xc, yc, bw, bh = int(c), float(xc), float(yc), float(bw), float(bh)
-            yolo.append((c, (xc - bw / 2) * w, (yc - bh / 2) * h, bw * w, bh * h))
+        try:
+            for line in txt.read_text(encoding="utf-8").splitlines():
+                if not line.strip():
+                    continue
+                c, xc, yc, bw, bh = line.split()
+                c, xc, yc, bw, bh = int(c), float(xc), float(yc), float(bw), float(bh)
+                yolo.append((c, (xc - bw / 2) * w, (yc - bh / 2) * h, bw * w, bh * h))
+        except (OSError, TypeError, ValueError) as exc:
+            mismatch.append(f"{im['file_name']}: invalid YOLO label ({exc})")
+            continue
 
         if len(yolo) != len(anns):
             mismatch.append(f"{im['file_name']}: {len(yolo)} yolo vs {len(anns)} coco")
@@ -68,6 +76,7 @@ def numeric_check(split: str) -> None:
           f"max deviation {worst:.3f}px, {len(mismatch)} mismatches")
     for m in mismatch[:5]:
         print(f"      {m}")
+    return status == "OK"
 
 
 def montage(split: str, n: int = 6, seed: int = 0) -> Path:
@@ -104,9 +113,13 @@ def montage(split: str, n: int = 6, seed: int = 0) -> Path:
     return out
 
 
-if __name__ == "__main__":
+def main() -> int:
     print("numeric YOLO <-> COCO cross-check:")
-    for s in ("val", "train"):
-        numeric_check(s)
-    p = montage("val")
+    checks = [numeric_check(split) for split in ("train", "val", "test")]
+    p = montage("test")
     print(f"\nmontage -> {p}")
+    return 0 if all(checks) else 1
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

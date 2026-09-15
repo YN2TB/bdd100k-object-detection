@@ -18,6 +18,9 @@
 
 ## Active
 
+- [2026-09-14: full BDD100K retraining](plans/active/2026-09-14-full-bdd100k-retraining.md)
+  — data/code validation and GPU smoke complete; validation RAM must be bounded
+  and passing code pushed before a clean production queue starts.
 - [2026-09-08: six-model profiling and RTX 3060 optimization](plans/active/2026-09-08-six-model-profiling.md)
   — implementation, profiling, smoke/resume, production training, and centralized
   evaluation complete; final independent review remains outstanding.
@@ -26,3 +29,6 @@
 
 - [2026-09-08: artifact layout](plans/archive/2026-09-08-artifact-layout.md) — completed;
   detailed README, migration and regression verification.
+- [2026-09-14: midterm pipeline simplification](plans/archive/2026-09-14-midterm-pipeline-simplification.md)
+  — completed; five-step README, focused data-integrity fixes, and explicit
+  essential COCO metrics.

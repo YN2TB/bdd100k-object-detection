@@ -99,18 +99,18 @@ def format_report(results: dict, title: str) -> str:
     w = 62
     out = [f"\n{title}", "=" * w,
            f"{'mAP@[.5:.95]':<26}{o['mAP50_95']:>10.4f}",
+           f"{'mAP reliable':<26}{o['mAP50_95_reliable_classes']:>10.4f}",
            f"{'mAP@.50':<26}{o['mAP50']:>10.4f}",
            f"{'mAP@.75':<26}{o['mAP75']:>10.4f}",
            "-" * w,
            f"{'mAP small':<26}{o['mAP_small']:>10.4f}",
            f"{'mAP medium':<26}{o['mAP_medium']:>10.4f}",
            f"{'mAP large':<26}{o['mAP_large']:>10.4f}",
+           f"{'AR@100':<26}{o['AR_100']:>10.4f}",
            "-" * w,
            f"{'class':<18}{'AP@[.5:.95]':>14}{'val boxes':>12}{'':>4}"]
     for name, v in pc.items():
         flag = "" if v["reliable"] else "  (too few)"
         out.append(f"{name:<18}{v['AP50_95']:>14.4f}{v['val_instances']:>12,}{flag}")
-    out += ["-" * w,
-            f"mean over {o['n_reliable_classes']} reliable classes"
-            f"{o['mAP50_95_reliable_classes']:>16.4f}", "=" * w]
+    out.append("=" * w)
     return "\n".join(out)

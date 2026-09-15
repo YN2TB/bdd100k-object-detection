@@ -1,5 +1,22 @@
 # Outstanding work
 
+New active execution plan:
+[full BDD100K retraining](plans/active/2026-09-14-full-bdd100k-retraining.md).
+
+- [x] Regenerate full-data manifests and links as 70/20/10 over all 79,863 labels.
+- [x] Build and verify YOLO/COCO labels for 79,863 labelled images.
+- [x] Implement and CPU-smoke SimpleCNN/ComplexCNN bounding-box detectors.
+- [x] Update the simple README pipeline for train/val/test and three models.
+- [x] Restore NVIDIA driver access and pass GPU preflight.
+- [x] Smoke/resume-check simple CNN, complex CNN, and YOLO11s.
+- [x] Bound custom-CNN validation at 100 detections/image; full-val smoke passed.
+- [x] Rerun complete acceptance: 100 tests pass (one expected skip), compilation,
+  CLI help, shell syntax, and diff whitespace checks pass.
+- [ ] Commit and push the passing full-data three-model implementation.
+- [ ] Only after a successful push, start a clean sequential train queue and
+  reactivate hourly reporting.
+- [ ] Predict and centrally evaluate all three models on the 7,986-image test split.
+
 Active execution plan:
 [six-model profiling](plans/active/2026-09-08-six-model-profiling.md).
 
@@ -31,8 +48,8 @@ Implemented repairs requiring runtime acceptance:
 
 Deferred beyond the active plan:
 
-- [ ] DATA-1: refuse manifest drift before writes.
-- [ ] DATA-2: verify empty-label images and return failure status.
-- [ ] DATA-3: validate manifest coverage and duplicate raw records.
-- [ ] DATA-4: bounded, atomic raw-label extraction.
+- [x] DATA-1: refuse manifest drift before writes.
+- [x] DATA-2: verify empty-label images and return failure status.
+- [x] DATA-3: validate manifest coverage and duplicate raw records.
+- [x] DATA-4: bounded, atomic raw-label extraction.
 - [ ] DOC-1: confirm full model roster before final comparison report.

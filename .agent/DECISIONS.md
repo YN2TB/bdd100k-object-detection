@@ -1,5 +1,44 @@
 # Durable decisions
 
+## 2026-09-14: Supersede the filtered subset with a full labelled experiment
+
+The user explicitly authorized retraining the final three-model roster using all
+publicly labelled BDD100K detection records. Preserve the completed daytime/clear
+experiment as history. The final policy combines 69,863 official train and 10,000
+official validation records, then splits all 79,863 images with `seed=0` into
+55,904 train, 15,973 validation, and 7,986 test images. There is no time-of-day or
+weather filter. The official 20,000-image test split remains inference-only
+because its labels are not public. New data and runs use separate paths and may
+not overwrite historical artifacts.
+
+The final primary roster is a hand-written four-block grid detector
+(`simple-cnn`), a hand-written residual grid detector (`complex-cnn`), and
+YOLO11s as the baseline. Both custom CNNs use standard PyTorch layers, a shared
+objectness/class/box head, and NMS; they are detectors rather than image-level
+classifiers. All three therefore produce bounding boxes and share the same COCO
+metrics. Older model code and artifacts are historical and stay outside the new
+report.
+
+"Retrain from scratch" means three new runs beginning at epoch 1 with no old
+daytime/clear checkpoint. The two custom CNNs use random initialization. YOLO11s
+uses its standard COCO-pretrained `yolo11s.pt` initialization as the declared
+transfer-learning baseline; its initialization and native recipe are reported
+as a comparison difference.
+
+One exact duplicate source box occurs in validation image
+`75055858-7d04a650.jpg`. Label conversion removes exact duplicates before
+writing either format, leaving 295,515 validation boxes and preventing
+Ultralytics-only deduplication from changing one backend's ground truth.
+
+## 2026-09-14: Keep the course pipeline simple
+
+The user chose five simple course stages: prepare/build, verify, train, predict,
+and evaluate. Keep the current flat package/scripts layout and
+existing CLI. Advanced profiling, monitoring, migration, and backend-specific
+entrypoints remain available but are documented as optional. Do not add a CLI
+framework, config hierarchy, CI, deployment, artifact schema, or broad new test
+matrix for this cleanup.
+
 ## 2026-09-08: Shared instructions and state
 
 User approved the folder demo in this task. `AGENTS.md` is the shared rule source;

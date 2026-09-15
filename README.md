@@ -1,321 +1,133 @@
 # BDD100K Object Detection
 
-Project so sánh detector trên subset BDD100K **daytime + clear** cố định:
-**12.454 ảnh train / 1.764 ảnh val**, ảnh gốc 1280 × 720.
-Mã nguồn gồm pipeline dữ liệu, YOLO/RT-DETR qua Ultralytics, Faster R-CNN qua
-Torchvision và đánh giá COCO dùng chung.
+Project giữa kỳ nhận diện và định vị vật thể giao thông bằng bounding box. Ba
+mô hình được so sánh trên cùng dữ liệu, split và COCO evaluator:
 
-Quy tắc project: [AGENTS.md](AGENTS.md). Phân công RTX 3060:
-[docs/HANDOFF_3060.md](docs/HANDOFF_3060.md). Thông tin lịch sử:
-[docs/experiments.md](docs/experiments.md). Các đường dẫn trong snapshot lịch sử
-được giữ nguyên để bảo toàn ngữ cảnh; dùng lệnh trong README này để chạy mới.
+| Mô hình | Vai trò | Số tham số |
+|---|---|---:|
+| SimpleCNNDetector | CNN tự viết gồm 4 convolution blocks | 408.171 |
+| ComplexCNNDetector | CNN tự viết sâu hơn, có residual blocks | 11.190.123 |
+| YOLO11s | Baseline | khoảng 9,4 triệu |
 
-## Cấu trúc project
+Hai CNN tự viết đều có detection head dự đoán objectness, class và bounding box;
+không phải CNN classification. YOLO11s dùng Ultralytics làm baseline.
 
-Cây dưới đây mô tả source và các artifact tiêu biểu. **[G]** là nội dung được
-thiết kế để theo dõi bằng Git; **[R]** là dữ liệu/runtime bị Git bỏ qua.
-Các mục có **(*)** chỉ được tạo khi chạy tác vụ tương ứng hoặc do người dùng cung cấp;
-không phải tất cả đều có sẵn trong clone mới.
+## Dữ liệu
 
-```text
-bdd100k-object-detection/
-├── README.md                         [G] Hướng dẫn vận hành và cấu trúc này
-├── AGENTS.md                         [G] Quy tắc dùng chung cho agent
-├── CLAUDE.md                         [G] Import AGENTS.md cho Claude Code
-├── constraints.txt                   [G] Khóa phiên bản PyTorch CUDA
-├── .gitignore                        [G] Giữ artifact lớn ngoài Git
-├── .agent/                           [G] Trạng thái chung Codex / Claude / người dùng
-│   ├── README.md                         Quy trình cập nhật trạng thái
-│   ├── HANDOFF.md                        Trạng thái kiểm chứng và bước tiếp theo
-│   ├── TODO.md                           Backlog chưa xử lý
-│   ├── DECISIONS.md                      Quyết định lâu dài
-│   ├── PLANS.md                          Danh mục kế hoạch
-│   └── plans/
-│       ├── active/                       Kế hoạch đang làm
-│       └── archive/                      Kế hoạch hoàn tất; .gitkeep giữ thư mục rỗng
-├── .agents/skills/                   [G] Skill workflow chuẩn dùng chung
-│   ├── bddcv-orchestration/              Phân loại task, xác nhận và điều phối agent
-│   └── bddcv-experiment-validation/      Kiểm chứng pipeline và tính hợp lệ thí nghiệm
-├── .codex/                           [G] Cấu hình project Codex
-│   ├── config.toml                       Bật agent và nạp shared skills
-│   └── agents/                           Worker, explorer, validator và reviewer
-├── .claude/                          [G] Cấu hình project Claude Code
-│   ├── settings.json
-│   ├── agents/                           Worker, explorer, validator và reviewer
-│   └── skills/                           Router đến shared skills chuẩn
-├── .claude/settings.local.json       [R] (*) Cấu hình cá nhân
-├── configs/
-│   └── bdd_source.yaml               [G] Dataset path, split và class names
-├── src/bddcv/                        [G] Thành phần Python dùng chung
-│   ├── __init__.py
-│   ├── paths.py                          Đường dẫn mặc định, weights và runtime caches
-│   ├── constants.py                      Thứ tự class, aliases, điều kiện subset
-│   ├── labels.py                         Đọc raw JSON theo luồng, lấy detection boxes
-│   ├── frcnn.py                          Dataset, model, export prediction Faster R-CNN
-│   └── evaluation.py                     COCO evaluator và báo cáo theo class
-├── scripts/                          [G] Entrypoint chạy từ terminal
-│   ├── prepare_data.py                   Trích raw labels, subset và manifests
-│   ├── scan_labels.py                    Thống kê điều kiện / class
-│   ├── build_labels.py                   Sinh YOLO labels và COCO annotations
-│   ├── verify_labels.py                  Đối chiếu numeric và montage
-│   ├── train_with_resume.py              Supervisor YOLO, RT-DETR, Faster R-CNN
-│   ├── train_frcnn.py                    Trainer Faster R-CNN và checkpoint/resume
-│   ├── smoke_ultra.py                    Một epoch smoke, log và peak VRAM
-│   ├── monitor_gpu.py                    Ghi GPU CSV theo vòng đời PID
-│   ├── predict_yolo.py                   Export YOLO → COCO JSON
-│   ├── predict_frcnn.py                  Export Faster R-CNN → COCO JSON
-│   ├── evaluate.py                       Đánh giá prediction, tùy chọn lưu JSON
-│   └── maintenance/
-│       └── migrate_artifacts.py          Dry-run / migration / rollback artifact cũ
-├── tests/                            [G] Regression tests không cần GPU
-│   ├── test_artifact_layout.py           Routing fresh/resume và đường dẫn CLI
-│   └── test_migrate_artifacts.py         Di chuyển, xung đột, checksum và rollback
-├── docs/                             [G] Tài liệu dùng chung
-│   ├── experiments.md                    Snapshot lịch sử nguyên văn
-│   ├── HANDOFF_3060.md                    Hướng dẫn training RT-DETR trên 3060
-│   └── reviews/
-│       └── 2026-09-08-project-audit.md    Phát hiện, ưu tiên, bằng chứng, kiểm chứng
-├── weights/                          [R] Pretrained/downloaded weights
-│   ├── rtdetr-l.pt                       Pretrained RT-DETR, không phải best của run
-│   ├── yolo26n.pt                        Weight phụ dùng kiểm tra AMP của bản cài hiện tại
-│   └── torch/                           (*) Cache pretrained của Torchvision
-├── data/
-│   ├── archives/archive.zip          [R] (*) Archive đầu vào mặc định; có thể dùng --archive
-│   ├── labels_raw/                   [R] Hai raw JSON legacy BDD100K
-│   ├── label_census.json             [G] Thống kê tái lập dataset
-│   └── source_daytime_clear/
-│       ├── train_images.txt          [G] Manifest train cố định
-│       ├── val_images.txt            [G] Manifest val cố định
-│       ├── images/{train,val}/       [R] Ảnh subset đã trích
-│       ├── labels/{train,val}/       [R] YOLO txt
-│       ├── labels/*.cache            [R] (*) Cache label do Ultralytics tạo
-│       └── annotations/              [R] instances_train.json, instances_val.json
-├── runs/                             [R] Tất cả kết quả chạy và metadata tạm
-│   ├── train/<run-name>/                 Ví dụ rtdetr-l; chi tiết bên dưới
-│   ├── smoke/<run-name>/                 Ví dụ smoke_rtdetr; tách khỏi run chính
-│   ├── predictions/                     (*) COCO prediction export độc lập
-│   ├── evaluation/                      (*) JSON đánh giá độc lập khi yêu cầu lưu
-│   ├── verification/                    Montage verify_val.png
-│   ├── cache/                           (*) Cấu hình/cache project của thư viện
-│   │   ├── ultralytics/                      Settings riêng project, không sửa config cá nhân
-│   │   └── matplotlib/                       Font/config cache
-│   └── maintenance/
-│       ├── migration-<id>.json               (*) Ánh xạ, SHA-256 và trạng thái migration
-│       ├── legacy_scripts/                  (*) Script cũ giữ làm bằng chứng, không dùng để chạy
-│       └── legacy_logs/                     (*) Log cũ chưa gắn được với run cụ thể
-└── .venv/                            [R] (*) Môi trường Python cục bộ
-```
+Project dùng toàn bộ **79.863 ảnh BDD100K có nhãn detection**, không lọc thời
+gian hoặc thời tiết. Split cố định với `seed=0`:
 
-Thư mục dữ liệu trích toàn bộ archive có thể vẫn tồn tại trên máy; chúng không
-thuộc output bắt buộc của pipeline và không được tự động di chuyển hoặc xóa.
-`.git/`, thư mục cache Python và thư mục rỗng do công cụ tạo không liệt kê trong cây.
+| Split | Ảnh | Bounding box | Mục đích |
+|---|---:|---:|---|
+| Train | 55.904 | 1.029.446 | học tham số |
+| Validation | 15.973 | 295.515 | chọn `best.pt` |
+| Test | 7.986 | 146.998 | tính metrics cuối |
 
-### Bên trong một run
+Tập test 7.986 ảnh có ground truth và không được dùng để chọn model. Official
+BDD100K test 20.000 ảnh không có nhãn công khai nên không dùng để tính metrics.
 
-```text
-runs/train/<run-name>/
-├── weights/{best,last}.pt      Ultralytics: checkpoint theo cấu trúc gốc
-├── best.pt, last.pt            Faster R-CNN: checkpoint ở ngay thư mục run
-├── best_metrics.json           Faster R-CNN: metrics của best checkpoint
-├── results.csv                 Metrics theo epoch
-├── args.yaml                   Ultralytics: tham số chạy
-├── *.png, *.jpg                Ultralytics: plot và ảnh kiểm tra
-├── logs/
-│   ├── supervisor.log          Wrapper: cả thông báo supervisor và stdout/stderr child
-│   ├── supervisor.pid          PID lần gọi wrapper gần nhất; có thể đã hết hiệu lực
-│   ├── supervisor_launch.json  Thời điểm, argv, run_dir lần gọi gần nhất
-│   ├── launcher.log            (*) Nếu chạy detached và redirect console
-│   └── gpu.csv                 (*) Nếu chạy monitor_gpu.py
-├── predictions/               (*) Nếu chỉ định --out tới đây khi export
-└── evaluation/                (*) Nếu chỉ định --save tới đây khi evaluate
-```
+## Cài đặt
 
-Đây là hai kiểu trainer, không phải mọi file đều xuất hiện trong cùng một run.
-Faster R-CNN tạm tạo `pred_epoch<N>.json` trong run rồi xóa sau epoch thành công;
-`*.pt.tmp` cũng nằm cạnh checkpoint. Smoke Ultralytics thêm `logs/smoke.log` và
-`logs/smoke_status.json`. Run cũ đã chuyển giữ nguyên tên log/metadata lịch sử.
-
-## Setup
-
-Các lệnh ví dụ chạy từ repository root. Khuyến nghị dùng Python 3.12 như môi trường
-Linux đã kiểm tra; dùng constraints cho mọi cài đặt có thể kéo PyTorch.
+Chạy từ thư mục gốc project:
 
 ```bash
 python -m venv .venv
 source .venv/bin/activate
-python -m pip install ultralytics pycocotools psutil -c constraints.txt --extra-index-url https://download.pytorch.org/whl/cu128
-python -c "import torch; print(torch.__version__, torch.cuda.get_device_capability(0)); print(torch.zeros(8, device='cuda').sum().item())"
+python -m pip install ultralytics pycocotools \
+  -c constraints.txt --extra-index-url https://download.pytorch.org/whl/cu128
 ```
 
-Windows: kích hoạt `.venv\Scripts\Activate.ps1`. Không đổi model/hyperparameter chỉ
-để phù hợp với phần tổ chức thư mục. Sửa duy nhất trường `path` trong
-`configs/bdd_source.yaml` theo dataset trên máy; giữ split và class names.
+Sửa trường `path` trong `configs/bdd_source.yaml` nếu project nằm ở vị trí khác.
 
-### Model registry and RF-DETR isolation
+## Pipeline 5 bước
 
-The approved registry ids are `yolo11s`, `yolo11m`, `yolo26s`,
-`frcnn-r50-fpn-v2`, `rtdetr-l`, and `rfdetr-small`. Generic checkpoints such as
-`best.pt` require `--model-id`; backend selection never guesses from a filename.
-For RF-DETR, create the generated COCO view and use a separate environment:
+### 1. Chuẩn bị full data
 
 ```bash
-python scripts/build_rfdetr_adapter.py
-python -m venv .venv-rfdetr
-.venv-rfdetr/bin/python -m pip install -r requirements-rfdetr.txt -c constraints-rfdetr.txt --extra-index-url https://download.pytorch.org/whl/cu128
-```
-
-The RF-DETR adapter is generated under `data/adapters/rfdetr/` and is ignored
-by Git. It uses hard links when possible and verifies image bytes, split
-membership, counts, and the ten shared categories. Do not install RF-DETR into
-the main `.venv`.
-
-Current acceptance and saved measurements: [profiling status](docs/model-profiling-status.md).
-The original sweep timing excluded loader wait; those selections are provisional
-and must be remeasured before use. Full-data smoke/resume acceptance remains pending.
-
-Profile commands write structured, ignored evidence under `runs/profile/` and
-run each candidate in a fresh subprocess. Timing schema 3 uses consecutive step
-completion boundaries (including loader wait), so old timing artifacts are not
-eligible for selection. Conditional RAM-cache trials require GPU utilization
-below 80% and measured loader wait above 20%; retention requires at least 5%
-throughput improvement, host RAM below 75%, and total GPU use at most 95%.
-Selection prioritizes the fastest measured candidate; lower memory wins only when
-throughput is within 1% of the fastest candidate.
-
-All training entrypoints and the supervisor accept `--cache none|ram` and
-`--prefetch 2|4`; these settings are locked on resume. Choose them from a fresh
-profile rather than applying the historical selections. A cache fitting the
-512-image probe does not establish that the full dataset fits in host RAM;
-full-data acceptance must check that separately.
-
-A host without CUDA reports
-`gpu_unavailable` rather than a misleading CPU timing:
-
-```bash
-python scripts/profile_models.py --model-id yolo11s --model-id frcnn-r50-fpn-v2
-python scripts/predict.py runs/train/yolo11s/weights/best.pt --model-id yolo11s
-python scripts/predict_yolo.py runs/train/rtdetr-l/weights/best.pt --model-id rtdetr-l
-```
-
-## Chuẩn bị và kiểm tra dữ liệu
-
-Với clone mới chưa có raw labels, `prepare_data.py` trích labels từ archive trước;
-`scan_labels.py` cần các labels này. Với raw labels đã có, có thể chạy census trước.
-
-```bash
-python scripts/prepare_data.py --archive /path/to/bdd100k.zip
-python scripts/scan_labels.py
+python scripts/prepare_data.py
 python scripts/build_labels.py
+```
+
+`prepare_data.py` gộp toàn bộ record train/validation có nhãn, chia 70/20/10 và
+tạo symlink để không nhân đôi ảnh. Manifest thay đổi ngoài `seed=0` sẽ bị từ chối.
+Một annotation nguồn bị lặp hoàn toàn được bỏ đồng thời khỏi YOLO và COCO để ba
+model học và được chấm trên cùng ground truth.
+
+### 2. Kiểm tra nhãn
+
+```bash
 python scripts/verify_labels.py
 ```
 
-Bỏ `--archive` để dùng `data/archives/archive.zip`. Mở
-`runs/verification/verify_val.png` và đọc kết quả numeric. Lưu ý hai vấn đề đã ghi
-backlog: prepare hiện cảnh báo drift sau khi ghi manifest; verify hiện chỉ in `FAIL`
-chứ chưa trả exit code khác 0. Kiểm tra thông báo trước khi bắt đầu training.
+Lệnh đối chiếu toàn bộ YOLO label với COCO ground truth và trả exit code khác 0
+nếu thiếu label, sai class hoặc sai tọa độ.
 
-## Smoke, training và resume
+### 3. Train
 
-```bash
-# Smoke đủ một epoch; dùng tên mới nếu thử lại
-python scripts/smoke_ultra.py --model rtdetr-l.pt --name smoke_rtdetr_new --batch 8
-# Smoke routing nhanh; chỉ dành cho kiểm thử, không dùng làm kết quả thí nghiệm
-python scripts/smoke_ultra.py --model rtdetr-l.pt --name smoke_paths --fraction 0.001 --batch 8
-python scripts/train_frcnn.py --limit-train 200 --epochs 1 --out runs/smoke/smoke_frcnn
-
-# Run chính, fixed budget
-python scripts/train_with_resume.py ultra --model yolo11s.pt --name yolo11s --epochs 50 --batch 16
-python scripts/train_with_resume.py ultra --model rtdetr-l.pt --name rtdetr-l --epochs 50 --batch 8
-python scripts/train_with_resume.py frcnn --epochs 50 --batch 4
-
-# Wrapper tự nhận checkpoint khi gọi lại cùng run và tham số
-python scripts/train_with_resume.py ultra --model rtdetr-l.pt --epochs 50 --batch 8 --out runs/train/rtdetr-l
-# Faster R-CNN trực tiếp
-python scripts/train_frcnn.py --epochs 50 --batch 4 --resume
-```
-
-Tên weight trần như `rtdetr-l.pt` được giải thành `weights/rtdetr-l.pt`. Muốn dùng
-checkpoint cụ thể, truyền đường dẫn như `./custom/model.pt`. Output mặc định neo
-vào repository kể cả khi gọi script bằng đường dẫn tuyệt đối từ thư mục khác.
-Đường dẫn tương đối do người dùng chỉ định qua `--out`, `--save`, `--archive` hoặc
-đường dẫn checkpoint được hiểu theo thư mục gọi lệnh.
-
-`--out` là thư mục run chính xác, không tự nối thêm tên model. Dùng wrapper khi
-resume run Ultralytics đã chuyển: wrapper ghi đè `save_dir` cũ bằng vị trí mới mà
-không sửa checkpoint. Run đủ số epoch sẽ được wrapper bỏ qua. Checkpoint Ultralytics
-đã kết thúc đầy đủ thường không còn optimizer để resume thêm epoch.
-
-Để chạy detached trên Linux, không redirect vào `supervisor.log` vì wrapper đã ghi file đó:
+Ba run chính dùng cùng 30 epoch và được ghi riêng dưới `runs/train_full/`:
 
 ```bash
-mkdir -p runs/train/rtdetr-l/logs
-nohup python -u scripts/train_with_resume.py ultra --model rtdetr-l.pt --name rtdetr-l --epochs 50 --batch 8 > runs/train/rtdetr-l/logs/launcher.log 2>&1 &
-# Dùng PID thực vừa khởi chạy, ví dụ $! trong cùng shell
-python scripts/monitor_gpu.py "$!" --run-dir runs/train/rtdetr-l
+python scripts/train_cnn.py --model simple-cnn --epochs 30 --batch 16
+python scripts/train_cnn.py --model complex-cnn --epochs 30 --batch 8
+python scripts/train_with_resume.py ultra --model yolo11s.pt --model-id yolo11s \
+  --name yolo11s --epochs 30 --batch 16 --out runs/train_full/yolo11s
 ```
 
-Monitor mặc định ghi `logs/gpu.csv` bằng chế độ tạo mới, từ chối ghi đè. Chọn
-`--out` khác khi cần ghi phiên mới. PID file cũ là metadata, không chứng minh process còn chạy.
+Đây là các run mới từ epoch 1, không resume checkpoint daytime/clear. Hai CNN
+khởi tạo ngẫu nhiên; YOLO11s khởi tạo từ trọng số COCO chuẩn `yolo11s.pt`, đúng
+vai trò baseline transfer-learning, và khác biệt này phải được ghi trong báo cáo.
 
-## Prediction và evaluation
+Hai CNN lưu `last.pt` mỗi epoch và tiếp tục bằng cách thêm `--resume`. Không dùng
+checkpoint của thí nghiệm daytime/clear cũ.
+
+### 4. Predict trên test
 
 ```bash
-python scripts/predict_yolo.py runs/train/yolo11s/weights/best.pt --model-id yolo11s
-python scripts/predict_frcnn.py runs/train/frcnn/best.pt --model-id frcnn-r50-fpn-v2
-python scripts/evaluate.py runs/predictions/yolo.json --title YOLO11s --save runs/evaluation/yolo.json
-python scripts/evaluate.py runs/predictions/frcnn.json --title Faster-R-CNN --save runs/evaluation/frcnn.json
-
-# Có thể gắn output với run thay vì dùng thư mục export chung
-python scripts/predict_yolo.py runs/train/yolo11s/weights/best.pt --out runs/train/yolo11s/predictions/val.json
-python scripts/evaluate.py runs/train/yolo11s/predictions/val.json --save runs/train/yolo11s/evaluation/val.json
+python scripts/predict.py runs/train_full/simple-cnn/best.pt \
+  --model-id simple-cnn --out runs/predictions_full/simple-cnn.json
+python scripts/predict.py runs/train_full/complex-cnn/best.pt \
+  --model-id complex-cnn --out runs/predictions_full/complex-cnn.json
+python scripts/predict.py runs/train_full/yolo11s/weights/best.pt \
+  --model-id yolo11s --out runs/predictions_full/yolo11s.json
 ```
 
-`evaluate.py` chỉ lưu JSON khi có `--save` và tự tạo thư mục cha. Hai predictor mặc
-định lần lượt ghi `runs/predictions/yolo.json` và `frcnn.json`; dùng `--out` riêng để
-không ghi đè các export trước. `predict_yolo.py` cũng nhận `--model-id rtdetr-l` để
-export RT-DETR theo cùng chuẩn COCO. RF-DETR prediction chạy trong môi trường cô
-lập của nó; mọi ảnh không có box đều được giữ là ảnh không có detection trong JSON.
-
-## Migration artifact cũ
+### 5. Evaluate
 
 ```bash
-python scripts/maintenance/migrate_artifacts.py
-python scripts/maintenance/migrate_artifacts.py --apply
-# Chọn đúng receipt đã in ra; không dùng nguyên placeholder bên dưới
-python scripts/maintenance/migrate_artifacts.py --rollback runs/maintenance/migration-<id>.json
-python scripts/maintenance/migrate_artifacts.py --rollback runs/maintenance/migration-<id>.json --apply
+python scripts/evaluate.py runs/predictions_full/simple-cnn.json \
+  --title SimpleCNN --save runs/evaluation_full/simple-cnn.json
+python scripts/evaluate.py runs/predictions_full/complex-cnn.json \
+  --title ComplexCNN --save runs/evaluation_full/complex-cnn.json
+python scripts/evaluate.py runs/predictions_full/yolo11s.json \
+  --title YOLO11s --save runs/evaluation_full/yolo11s.json
 ```
 
-Mặc định chỉ liệt kê, không tạo file. `--apply` yêu cầu kiểm tra process trên host
-và `psutil`; không chạy từ PID namespace che khuất process của máy chủ. Công cụ
-chỉ chuyển các đường dẫn legacy đã biết, không ghi đè đích, ghi SHA-256 trước khi
-chuyển, kiểm tra lại sau chuyển và giữ receipt để rollback. Di chuyển dùng hard-link
-rồi unlink trong cùng filesystem; không tạo symlink. Nếu nguồn/đích ở filesystem khác,
-lệnh dừng và receipt cho phép rollback phần đã chuyển. Sau migration hoàn chỉnh,
-chạy lại trả về 0 file cần chuyển.
+Prediction giữ tối đa 100 box/ảnh, đúng ngưỡng `maxDets=100` của COCO evaluator
+và tránh giữ hàng triệu box không được dùng trong RAM. Metric chính là COCO
+`mAP@[.5:.95]`; báo cáo cũng gồm `mAP@.50`, `mAP@.75`, AP
+theo kích thước, `AR@100` và AP từng class. Accuracy không dùng làm metric chính
+vì object detection không có tập true-negative box được định nghĩa rõ ràng.
 
-Rollback từ chối artifact đã thay đổi sau migration hoặc đích cũ đã có file khác.
-Không chạy rollback sau khi tiếp tục training mà chưa xem xét thay đổi. `args.yaml`,
-checkpoint và launch JSON cũ giữ nguyên byte và có thể chứa đường dẫn cũ; ánh xạ
-trong receipt xác định vị trí hiện tại. Log `.py` lịch sử được lưu dưới
-`runs/maintenance/legacy_scripts/`, không chạy lại các bản đó.
+## Cấu trúc cần biết
 
-## Bất biến thí nghiệm và kiểm thử
+```text
+configs/bdd_source.yaml       đường dẫn full dataset và class
+data/source_full/             manifest, ảnh liên kết và labels sinh ra
+src/bddcv/cnn_detector.py     SimpleCNN, ComplexCNN, loss và decode box
+scripts/train_cnn.py          trainer chung cho hai CNN tự viết
+scripts/predict.py            predictor chung cho cả ba model
+scripts/evaluate.py           COCO evaluator chung
+runs/train_full/              checkpoint của thí nghiệm mới
+```
 
-- Giữ nguyên manifests, điều kiện daytime/clear và thứ tự `DET_CLASSES`.
-- YOLO class `i` ↔ COCO category `i + 1`; ánh xạ image ID bằng filename.
-- Đọc raw labels bằng `stream_records()`, không nạp toàn bộ JSON train vào RAM.
-- Mọi số liệu báo cáo dùng `bddcv.evaluation`; không trộn với metric nội bộ Ultralytics.
-- Giữ ngân sách và độ phân giải của phân công; RT-DETR là 50 epoch, `imgsz=640`, `seed=0`.
-- Giữ checkpoint/resume state; công bố khác biệt optimizer, schedule và augmentation.
-- Đo throughput các model trên cùng GPU. Không lấy số tốc độ 3060 làm so sánh chéo máy.
+Thứ tự 10 class chỉ lấy từ `src/bddcv/constants.py`; YOLO class `i` tương ứng
+COCO category `i+1`. Prediction luôn ánh xạ image ID theo filename.
+
+## Kiểm tra code
 
 ```bash
 python -m unittest discover -s tests -v
 ```
 
-Tests dùng fixture tạm cho migration và trainer giả lập cho lệnh fresh/resume;
-không tải model, không chạy GPU. Báo cáo kiểm chứng tích hợp và backlog ở
-[project audit](docs/reviews/2026-09-08-project-audit.md).
-Tiếp tục công việc bằng [.agent/HANDOFF.md](.agent/HANDOFF.md) và
-[.agent/TODO.md](.agent/TODO.md).
+Các kết quả sáu model và subset daytime/clear trước đây được giữ nguyên tại
+`docs/model-ranking.md` như lịch sử, không thuộc báo cáo ba model mới.

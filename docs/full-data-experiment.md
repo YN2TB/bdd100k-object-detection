@@ -40,13 +40,18 @@ initialization differences must be disclosed with final results.
   excessive custom-validation RAM use. That issue is fixed and the passing code
   is now pushed. The clean queue started at 2026-09-15 10:13 +07 with SimpleCNN
   first; hourly reporting is active.
+- SimpleCNN completed 30/30 epochs in 3 h 20 min with no restart. Its best
+  validation mAP50-95 is 0.002768 at epoch 19.
+- ComplexCNN had completed 13/30 checkpoints at 2026-09-15 15:20 +07 and was
+  finishing epoch 14. Its average is about 7.7 minutes/epoch; estimated finish is
+  17:25 +07. YOLO11s remains queued.
 
 Pre-production RTX 3060 estimates for 30 epochs:
 
 | Model | Estimated epoch | Estimated 30 epochs | Confidence |
 |---|---:|---:|---|
-| SimpleCNN | 10-12 min | 5-6 h | high; full train pass and full validation measured |
-| ComplexCNN | 16-20 min | 8-10 h | medium; 800-image train benchmark extrapolated |
+| SimpleCNN | 6.7 min observed | 3 h 20 min observed | complete |
+| ComplexCNN | 7.7 min observed | about 3 h 51 min | high; 13 epochs observed |
 | YOLO11s | 11-18 min | 6-9 h | medium; full validation plus historical throughput |
 
 The sequential training total is approximately 19-25 hours, excluding final

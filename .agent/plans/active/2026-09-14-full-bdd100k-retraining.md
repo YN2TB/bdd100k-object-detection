@@ -205,6 +205,13 @@ Pre-launch evidence and correction:
 - SimpleCNN is the active first stage. Initial clean-run telemetry showed 97% GPU,
   4,032/12,288 MiB VRAM, 63 C, and about 145 W. Hourly Vietnamese monitoring is
   active again.
+- SimpleCNN completed all 30 epochs at 2026-09-15 13:34 +07 with no restart.
+  Total recorded epoch time was 12,014 seconds (3 h 20 min), averaging 400 seconds;
+  the best validation mAP50-95 was 0.002768 at epoch 19.
+- ComplexCNN then started automatically. At 2026-09-15 15:20 +07 it had 13/30
+  completed checkpoints and was finishing epoch 14. Its recent epoch time is
+  about 462 seconds and its best validation mAP50-95 so far is 0.019130 at epoch
+  13. Estimated ComplexCNN completion is around 17:25 +07.
 
 ### 6. Test prediction and evaluation — pending
 

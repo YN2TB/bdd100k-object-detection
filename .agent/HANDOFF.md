@@ -64,6 +64,13 @@ hourly reporting is active. The invalid earlier artifact is preserved separately
 under `runs/smoke_full/aborted-before-push-simple-cnn-20260915` and must not be
 used in results.
 
+SimpleCNN completed 30/30 epochs without a restart at 2026-09-15 13:34 +07.
+Recorded epoch time totals 12,014 seconds (3 h 20 min), with 400 seconds/epoch
+on average; its best validation mAP50-95 is 0.002768 at epoch 19. ComplexCNN
+started next and had 13/30 completed checkpoints at 15:20 +07 while finishing
+epoch 14. It averages about 462 seconds/epoch and its best validation score so
+far is 0.019130 at epoch 13. Estimated ComplexCNN completion is about 17:25 +07.
+
 ## Completed checkpoint: midterm pipeline simplification
 
 The user requested a deliberately simple undergraduate midterm workflow. The

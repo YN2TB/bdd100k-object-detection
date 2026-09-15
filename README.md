@@ -108,6 +108,22 @@ và tránh giữ hàng triệu box không được dùng trong RAM. Metric chín
 theo kích thước, `AR@100` và AP từng class. Accuracy không dùng làm metric chính
 vì object detection không có tập true-negative box được định nghĩa rõ ràng.
 
+## Kết quả test cuối
+
+Ba `best.pt` được chấm bằng cùng evaluator trên đúng 7.986 ảnh test có 146.998
+ground-truth box. Đây là kết quả test cuối, không phải metric validation riêng
+của từng trainer.
+
+| Model | mAP50-95 | mAP50 | mAP75 | AR@100 | Thời gian train |
+|---|---:|---:|---:|---:|---:|
+| SimpleCNN | 0.0027 | 0.0107 | 0.0011 | 0.0147 | 3 giờ 20 phút |
+| ComplexCNN | 0.0187 | 0.0585 | 0.0076 | 0.0651 | 3 giờ 51 phút |
+| YOLO11s | **0.2761** | **0.4867** | **0.2631** | **0.3644** | 5 giờ 23 phút |
+
+YOLO11s đứng đầu; ComplexCNN tốt hơn SimpleCNN nhưng còn cách xa baseline.
+Bảng đầy đủ gồm AP theo kích thước và từng class nằm tại
+[`docs/full-data-experiment.md`](docs/full-data-experiment.md).
+
 ## Cấu trúc cần biết
 
 ```text

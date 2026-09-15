@@ -1,5 +1,19 @@
 # Durable decisions
 
+## 2026-09-15: Publish held-out full-data results as the current comparison
+
+The final midterm comparison uses the best validation-selected checkpoint from
+each 30-epoch run and scores it once on the fixed 7,986-image test split through
+`bddcv.evaluation`. The headline test mAP50-95 values are 0.0027 for SimpleCNN,
+0.0187 for ComplexCNN, and 0.2761 for YOLO11s. YOLO11s is the final baseline
+winner; ComplexCNN improves over SimpleCNN but neither custom detector is close
+to the transfer-learned baseline.
+
+Keep these test results separate from trainer-native validation metrics. Do not
+tune checkpoints or thresholds using the test split. The full aggregate and
+per-class table lives in `docs/full-data-experiment.md`; the old daytime/clear
+six-model ranking remains historical and must not be rewritten.
+
 ## 2026-09-14: Supersede the filtered subset with a full labelled experiment
 
 The user explicitly authorized retraining the final three-model roster using all

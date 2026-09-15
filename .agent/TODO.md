@@ -1,27 +1,5 @@
 # Outstanding work
 
-New active execution plan:
-[full BDD100K retraining](plans/active/2026-09-14-full-bdd100k-retraining.md).
-
-- [x] Regenerate full-data manifests and links as 70/20/10 over all 79,863 labels.
-- [x] Build and verify YOLO/COCO labels for 79,863 labelled images.
-- [x] Implement and CPU-smoke SimpleCNN/ComplexCNN bounding-box detectors.
-- [x] Update the simple README pipeline for train/val/test and three models.
-- [x] Restore NVIDIA driver access and pass GPU preflight.
-- [x] Smoke/resume-check simple CNN, complex CNN, and YOLO11s.
-- [x] Bound custom-CNN validation at 100 detections/image; full-val smoke passed.
-- [x] Rerun complete acceptance: 100 tests pass (one expected skip), compilation,
-  CLI help, shell syntax, and diff whitespace checks pass.
-- [x] Commit the passing implementation locally as `d5e4f38`.
-- [x] Obtain explicit trust confirmation and push `d5e4f38` to the configured
-  GitHub remote.
-- [x] Start the clean sequential train queue after push and reactivate hourly
-  reporting (2026-09-15 10:13 +07; SimpleCNN first).
-- [x] Complete all 30 epochs for SimpleCNN (best val mAP50-95 0.002768).
-- [x] Complete all 30 epochs for ComplexCNN (best val mAP50-95 0.019779).
-- [ ] Complete YOLO11s (16/30 checkpoints at 2026-09-15 20:25 +07).
-- [ ] Predict and centrally evaluate all three models on the 7,986-image test split.
-
 Active execution plan:
 [six-model profiling](plans/active/2026-09-08-six-model-profiling.md).
 

@@ -162,7 +162,7 @@ Evidence:
 - After this repair, the full suite passed 100 tests with one expected isolated
   RF-DETR skip; compilation, queue shell syntax, and `git diff --check` passed.
 
-### 5. Three fresh training runs — running after publish
+### 5. Three fresh training runs — complete
 
 - Train a hand-written four-block grid detector (`simple-cnn`), a hand-written
   residual grid detector (`complex-cnn`), and YOLO11s. Both CNNs share the same
@@ -202,26 +202,22 @@ Pre-launch evidence and correction:
 - The publication-state checkpoint `8d36d3d` was also pushed. Local HEAD and the
   remote branch matched before the clean production queue started at 2026-09-15
   10:13 +07.
-- SimpleCNN is the active first stage. Initial clean-run telemetry showed 97% GPU,
-  4,032/12,288 MiB VRAM, 63 C, and about 145 W. Hourly Vietnamese monitoring is
-  active again.
+- The clean sequential queue started only after the passing implementation was
+  pushed. It ran from 2026-09-15 10:13 to 22:53 +07 and recorded no restart or
+  error.
 - SimpleCNN completed all 30 epochs at 2026-09-15 13:34 +07 with no restart.
   Total recorded epoch time was 12,014 seconds (3 h 20 min), averaging 400 seconds;
   the best validation mAP50-95 was 0.002768 at epoch 19.
-- ComplexCNN then started automatically. At 2026-09-15 15:20 +07 it had 13/30
-  completed checkpoints and was finishing epoch 14. Its recent epoch time is
-  about 462 seconds and its best validation mAP50-95 so far is 0.019130 at epoch
-  13. Estimated ComplexCNN completion is around 17:25 +07.
 - ComplexCNN completed 30/30 epochs at 2026-09-15 17:25 +07 with no restart.
   Total recorded epoch time was 13,850 seconds (3 h 51 min), averaging 462
   seconds; its best validation mAP50-95 was 0.019779 at epoch 23.
-- YOLO11s started automatically and had 16/30 completed checkpoints at 20:25
-  +07 (53.3%), while training epoch 17. Its best native validation mAP50-95 so
-  far is 0.28133 at epoch 16, recent epochs take about 647 seconds, and estimated
-  training completion is around 22:55 +07. Peak sampled VRAM is 6,440 MiB;
-  no restart or error is recorded.
+- YOLO11s completed 30/30 epochs at 2026-09-15 22:48 +07 in one attempt.
+  Ultralytics recorded 19,299 seconds (5 h 23 min) and a best native validation
+  mAP50-95 of 0.29102 at epoch 30.
+- Peak sampled VRAM was 5,021 MiB for SimpleCNN, 2,645 MiB for ComplexCNN, and
+  6,459 MiB for YOLO11s. Total sequential training time was about 12 h 35 min.
 
-### 6. Test prediction and evaluation — pending
+### 6. Test prediction and evaluation — complete
 
 - Export all predictions on the same 7,986-image held-out test split.
 - Evaluate every model through `bddcv.evaluation` with the same confidence and
@@ -230,12 +226,36 @@ Pre-launch evidence and correction:
   and per-class AP in one table.
 - Do not select or tune checkpoints using test metrics.
 
-### 7. Final documentation and review — pending
+Evidence:
+
+- Each model exported predictions for all 7,986 test image IDs. Predictions use
+  only COCO category IDs 1 through 10, contain finite scores and valid boxes, and
+  retain at most 100 detections per image.
+- Centralized test mAP50-95 is 0.0027 for SimpleCNN, 0.0187 for ComplexCNN, and
+  0.2761 for YOLO11s. Corresponding mAP50 is 0.0107, 0.0585, and 0.4867;
+  AR@100 is 0.0147, 0.0651, and 0.3644.
+- All ten classes have at least ten boxes in the test ground truth, so
+  reliable-class mAP equals overall mAP50-95. The `train` class has only 14
+  boxes and AP 0.0000 for all three models, so it remains fragile.
+- Full aggregate and per-class results are published in
+  `docs/full-data-experiment.md`; historical rankings remain unchanged.
+
+### 7. Final documentation and review — complete
 
 - Replace the README quick-start counts and explain the three splits plainly.
 - Publish a separate full-data ranking without changing the historical ranking.
 - Run final tests and independent acceptance review, then archive this plan.
 
+Evidence:
+
+- README and the full-data report now contain the final test table, actual
+  training times, split counts, initialization difference, and metric scope.
+- The final main unit suite passed 100 tests with one expected isolated RF-DETR
+  skip. Python compilation, prediction-artifact validation, and whitespace checks
+  passed. All production result CSV files contain 30 epochs, all three best
+  checkpoints exist, and the queue has terminal status `COMPLETE`.
+- The experiment plan is archived after the final documentation commit.
+
 ## Current blocker
 
-None. The clean sequential production run is active.
+None. The full-data three-model experiment is complete.

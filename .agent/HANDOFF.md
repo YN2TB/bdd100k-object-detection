@@ -2,12 +2,12 @@
 
 Updated: 2026-09-15
 
-## Active checkpoint: full BDD100K retraining
+## Completed checkpoint: full BDD100K retraining
 
 The user superseded the fixed daytime/clear scope and explicitly authorized a
-new experiment that retrains three models from scratch on every publicly
-labelled BDD100K detection record. The active ExecPlan is
-`.agent/plans/active/2026-09-14-full-bdd100k-retraining.md`.
+new experiment that retrained three models on every publicly labelled BDD100K
+detection record. The completed ExecPlan is
+`.agent/plans/archive/2026-09-14-full-bdd100k-retraining.md`.
 
 Checkpoints 0 through 4 are complete. All 79,863 public labelled records were combined
 without time/weather filtering and split with `seed=0` into 55,904 train, 15,973
@@ -22,16 +22,14 @@ already local, so no download is needed. NVIDIA-SMI and a CUDA tensor kernel now
 pass on the RTX 3060.
 
 The superseded 62,877/6,986/10,000 link-only view is temporarily preserved at
-`data/source_full_90_10_superseded`; it was never labelled or trained. Next:
-generate and verify YOLO/COCO labels for the final three splits, then update the
-three-model trainers and primary config.
+`data/source_full_90_10_superseded`; it was never labelled or trained.
 
 Full label conversion has completed: train has 1,029,446 retained boxes,
 validation 295,515, and test 146,998. One exact duplicate validation annotation
 was removed from both COCO and YOLO outputs. All ten classes occur in every split. No
-training has started. The next required decision is whether the assignment expects
-object-level bounding boxes plus classes. The user confirmed the detector design;
-implement the two custom CNNs and keep all three models on common COCO metrics.
+production training had started at that checkpoint. The user then confirmed
+object-level bounding boxes plus classes, so all three models use common COCO
+metrics.
 
 Checkpoints 2 and 3 are complete. `src/bddcv/cnn_detector.py` implements the
 408,171-parameter SimpleCNN and 11,190,123-parameter residual ComplexCNN with a
@@ -59,25 +57,33 @@ The full 100-test suite, compilation, CLI help, shell syntax, and diff checks pa
 The user explicitly approved the configured GitHub destination and commit
 `d5e4f38` was pushed to `origin/codex/add-model-profiling`. The publication gate
 is satisfied. Publication-state commit `8d36d3d` was also pushed. A clean queue
-started only afterward at 2026-09-15 10:13 +07; SimpleCNN is running first and
-hourly reporting is active. The invalid earlier artifact is preserved separately
-under `runs/smoke_full/aborted-before-push-simple-cnn-20260915` and must not be
-used in results.
+started only afterward at 2026-09-15 10:13 +07. The invalid earlier artifact is
+preserved separately under
+`runs/smoke_full/aborted-before-push-simple-cnn-20260915` and must not be used in
+results.
 
 SimpleCNN completed 30/30 epochs without a restart at 2026-09-15 13:34 +07.
 Recorded epoch time totals 12,014 seconds (3 h 20 min), with 400 seconds/epoch
 on average; its best validation mAP50-95 is 0.002768 at epoch 19. ComplexCNN
-started next and had 13/30 completed checkpoints at 15:20 +07 while finishing
-epoch 14. It averages about 462 seconds/epoch and its best validation score so
-far is 0.019130 at epoch 13. Estimated ComplexCNN completion is about 17:25 +07.
+started next; at an intermediate checkpoint it had 13/30 completed checkpoints
+at 15:20 +07 while finishing epoch 14. It averaged about 462 seconds/epoch and
+its best validation score at that point was 0.019130 at epoch 13.
 
 ComplexCNN completed 30/30 without a restart at 17:25 +07. Recorded epoch time
 totals 13,850 seconds (3 h 51 min), averaging 462 seconds/epoch; its best
-validation mAP50-95 is 0.019779 at epoch 23. YOLO11s then started and had 16/30
-completed checkpoints at 20:25 +07 while training epoch 17. Its best native
-validation mAP50-95 so far is 0.28133, recent epochs take about 647 seconds, and
-estimated completion is 22:55 +07. Peak sampled VRAM is 6,440 MiB and no
-restart/error is recorded.
+validation mAP50-95 is 0.019779 at epoch 23. YOLO11s completed 30/30 in one
+attempt at 22:48 +07, taking 19,299 seconds (5 h 23 min); its best native
+validation mAP50-95 is 0.29102 at epoch 30. The queue then predicted and
+centrally evaluated every best checkpoint and reached `COMPLETE` at 22:53 +07.
+
+Final COCO test mAP50-95 / mAP50 / mAP75 / AR@100 values are:
+SimpleCNN 0.0027 / 0.0107 / 0.0011 / 0.0147, ComplexCNN 0.0187 / 0.0585 /
+0.0076 / 0.0651, and YOLO11s 0.2761 / 0.4867 / 0.2631 / 0.3644. All predictions
+cover 7,986 test image IDs, use valid category IDs and finite boxes/scores, and
+contain at most 100 detections per image. Unit tests, Python compilation, and
+diff whitespace checks passed after documentation. The final results are in
+`docs/full-data-experiment.md`; the hourly automation is retired because no run
+remains active.
 
 ## Completed checkpoint: midterm pipeline simplification
 

@@ -162,7 +162,7 @@ Evidence:
 - After this repair, the full suite passed 100 tests with one expected isolated
   RF-DETR skip; compilation, queue shell syntax, and `git diff --check` passed.
 
-### 5. Three fresh training runs — pending publish gate
+### 5. Three fresh training runs — running after publish
 
 - Train a hand-written four-block grid detector (`simple-cnn`), a hand-written
   residual grid detector (`complex-cnn`), and YOLO11s. Both CNNs share the same
@@ -199,6 +199,12 @@ Pre-launch evidence and correction:
 - Acceptance passed, local commit `d5e4f38` was created, and the user explicitly
   confirmed the configured GitHub remote. Commit `d5e4f38` was pushed successfully
   to `origin/codex/add-model-profiling`. No training ran before that push.
+- The publication-state checkpoint `8d36d3d` was also pushed. Local HEAD and the
+  remote branch matched before the clean production queue started at 2026-09-15
+  10:13 +07.
+- SimpleCNN is the active first stage. Initial clean-run telemetry showed 97% GPU,
+  4,032/12,288 MiB VRAM, 63 C, and about 145 W. Hourly Vietnamese monitoring is
+  active again.
 
 ### 6. Test prediction and evaluation — pending
 
@@ -217,5 +223,4 @@ Pre-launch evidence and correction:
 
 ## Current blocker
 
-None. The passing implementation is published; a clean sequential production run
-may now start.
+None. The clean sequential production run is active.

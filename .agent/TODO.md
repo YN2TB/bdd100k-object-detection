@@ -15,7 +15,9 @@ New active execution plan:
 - [x] Commit the passing implementation locally as `d5e4f38`.
 - [x] Obtain explicit trust confirmation and push `d5e4f38` to the configured
   GitHub remote.
-- [ ] Start a clean sequential train queue and reactivate hourly reporting.
+- [x] Start the clean sequential train queue after push and reactivate hourly
+  reporting (2026-09-15 10:13 +07; SimpleCNN first).
+- [ ] Complete all 30 epochs for SimpleCNN, ComplexCNN, and YOLO11s.
 - [ ] Predict and centrally evaluate all three models on the 7,986-image test split.
 
 Active execution plan:

@@ -58,7 +58,11 @@ with 6,834,448 KiB peak RSS.
 The full 100-test suite, compilation, CLI help, shell syntax, and diff checks pass.
 The user explicitly approved the configured GitHub destination and commit
 `d5e4f38` was pushed to `origin/codex/add-model-profiling`. The publication gate
-is satisfied; start the clean queue next.
+is satisfied. Publication-state commit `8d36d3d` was also pushed. A clean queue
+started only afterward at 2026-09-15 10:13 +07; SimpleCNN is running first and
+hourly reporting is active. The invalid earlier artifact is preserved separately
+under `runs/smoke_full/aborted-before-push-simple-cnn-20260915` and must not be
+used in results.
 
 ## Completed checkpoint: midterm pipeline simplification
 

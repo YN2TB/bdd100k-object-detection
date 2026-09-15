@@ -19,8 +19,7 @@
 ## Active
 
 - [2026-09-14: full BDD100K retraining](plans/active/2026-09-14-full-bdd100k-retraining.md)
-  — validated implementation is pushed; clean sequential production is ready to
-  start.
+  — validated implementation is pushed; clean sequential production is running.
 - [2026-09-08: six-model profiling and RTX 3060 optimization](plans/active/2026-09-08-six-model-profiling.md)
   — implementation, profiling, smoke/resume, production training, and centralized
   evaluation complete; final independent review remains outstanding.

@@ -38,7 +38,8 @@ initialization differences must be disclosed with final results.
 - Production GPU training: not started validly. An early queue attempt was
   stopped before any epoch checkpoint because it preceded commit/push and exposed
   excessive custom-validation RAM use. That issue is fixed and the passing code
-  is now pushed; a clean queue is ready to launch.
+  is now pushed. The clean queue started at 2026-09-15 10:13 +07 with SimpleCNN
+  first; hourly reporting is active.
 
 Pre-production RTX 3060 estimates for 30 epochs:
 

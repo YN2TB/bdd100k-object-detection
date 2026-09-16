@@ -1,10 +1,34 @@
 # Plan index
 
+## Storage convention
+
+- `docs/superpowers/specs/` and `docs/superpowers/plans/` are reserved for the
+  initial repository agent/workflow setup created through the Superpowers design
+  process.
+- Put every subsequent implementation plan in `plans/active/` and add it to the
+  Active index below.
+- When a plan is complete, move it from `plans/active/` to `plans/archive/` and
+  move its index entry from Active to Archive.
+- Update this file whenever a plan is created, completed, superseded, or moved.
+
+## Base setup
+
+- [2026-09-08: shared Codex and Claude subagents](../docs/superpowers/plans/2026-09-08-shared-subagents-and-skills.md)
+  — completed; retained under `docs/superpowers/` as the initial agent/workflow setup.
+
 ## Active
 
-None.
+- [2026-09-08: six-model profiling and RTX 3060 optimization](plans/active/2026-09-08-six-model-profiling.md)
+  — implementation, profiling, smoke/resume, production training, and centralized
+  evaluation complete; final independent review remains outstanding.
 
 ## Archive
 
 - [2026-09-08: artifact layout](plans/archive/2026-09-08-artifact-layout.md) — completed;
   detailed README, migration and regression verification.
+- [2026-09-14: midterm pipeline simplification](plans/archive/2026-09-14-midterm-pipeline-simplification.md)
+  — completed; five-step README, focused data-integrity fixes, and explicit
+  essential COCO metrics.
+- [2026-09-14: full BDD100K retraining](plans/archive/2026-09-14-full-bdd100k-retraining.md)
+  — completed; three 30-epoch models trained, predicted, and centrally evaluated
+  on the fixed 7,986-image held-out test split.

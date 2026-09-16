@@ -15,6 +15,9 @@ PREDICTIONS_DIR = RUNS_DIR / "predictions"
 EVALUATION_DIR = RUNS_DIR / "evaluation"
 VERIFICATION_DIR = RUNS_DIR / "verification"
 CACHE_DIR = RUNS_DIR / "cache"
+PROFILE_DIR = RUNS_DIR / "profile"
+RFDETR_CACHE_DIR = CACHE_DIR / "rfdetr"
+RFDETR_ENV_DIR = PROJECT_ROOT / ".venv-rfdetr"
 DATA_CONFIG = PROJECT_ROOT / "configs/bdd_source.yaml"
 
 
@@ -53,3 +56,12 @@ def prepare_ultralytics() -> None:
                            "datasets_dir": str(DATA_DIR / "downloads")})
     # Ultralytics snapshots this setting at import; AMP reads the snapshot.
     utils.WEIGHTS_DIR = WEIGHTS_DIR
+
+
+def prepare_rfdetr_runtime() -> None:
+    """Create project-local RF-DETR cache directories for the isolated env."""
+    prepare_runtime()
+    huggingface = RFDETR_CACHE_DIR / "huggingface"
+    huggingface.mkdir(parents=True, exist_ok=True)
+    os.environ["RF_HOME"] = str(RFDETR_CACHE_DIR)
+    os.environ["HF_HOME"] = str(huggingface)

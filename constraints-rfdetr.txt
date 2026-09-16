@@ -1,0 +1,4 @@
+# Protect the same CUDA stack while RF-DETR is installed in its own env.
+torch==2.11.0+cu128
+torchvision==0.26.0+cu128
+rfdetr==1.10.1

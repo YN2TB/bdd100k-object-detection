@@ -1,4 +1,4 @@
-"""Convert the filtered subset into YOLO txt and COCO json from one source pass.
+"""Convert the full labelled dataset into YOLO txt and COCO JSON.
 
 Both target formats are written in the same loop from the same filtered
 records, so the two models cannot silently end up training on different data.
@@ -26,7 +26,7 @@ from bddcv.constants import (  # noqa: E402
 )
 from bddcv.labels import detection_boxes, stream_records  # noqa: E402
 
-SUBSET_DIR = DATA_DIR / "source_daytime_clear"
+SUBSET_DIR = DATA_DIR / "source_full"
 IMAGES_DIR = SUBSET_DIR / "images"
 LABELS_DIR = SUBSET_DIR / "labels"
 ANN_DIR = SUBSET_DIR / "annotations"
@@ -34,9 +34,47 @@ ANN_DIR = SUBSET_DIR / "annotations"
 MIN_SIDE = 2.0  # drop boxes thinner than this after clamping
 
 
+def all_records():
+    """Stream the combined official train and validation labels."""
+    for raw_split in ("train", "val"):
+        yield from stream_records(RAW_LABEL_FILES[raw_split])
+
+
+def validate_inputs(split: str, manifest: list[str]) -> set[str]:
+    """Check manifest, source records and images before writing labels."""
+    manifest_counts = Counter(manifest)
+    repeated_manifest = [name for name, count in manifest_counts.items() if count != 1]
+    if repeated_manifest:
+        raise SystemExit(
+            f"{split} manifest contains duplicate filename(s): {repeated_manifest[:3]}"
+        )
+
+    wanted = set(manifest)
+    missing_images = [name for name in manifest if not (IMAGES_DIR / split / name).is_file()]
+    if missing_images:
+        raise SystemExit(
+            f"{split} is missing {len(missing_images)} image(s), e.g. {missing_images[:3]}"
+        )
+
+    raw_counts = Counter()
+    for record in all_records():
+        name = record["name"]
+        if name in wanted:
+            raw_counts[name] += 1
+
+    missing_records = [name for name in manifest if raw_counts[name] == 0]
+    duplicate_records = [name for name in manifest if raw_counts[name] > 1]
+    if missing_records or duplicate_records:
+        raise SystemExit(
+            f"{split} raw-label coverage mismatch: "
+            f"missing={missing_records[:3]}, duplicates={duplicate_records[:3]}"
+        )
+    return wanted
+
+
 def build(split: str) -> dict:
     manifest = (SUBSET_DIR / f"{split}_images.txt").read_text(encoding="utf-8").split()
-    wanted = set(manifest)
+    wanted = validate_inputs(split, manifest)
     img_dir = IMAGES_DIR / split
     lbl_dir = LABELS_DIR / split
     lbl_dir.mkdir(parents=True, exist_ok=True)
@@ -44,11 +82,11 @@ def build(split: str) -> dict:
     coco_images, coco_anns = [], []
     dims = Counter()
     per_class = Counter()
-    n_clamped = n_dropped = 0
+    n_clamped = n_dropped = n_duplicates = 0
     ann_id = 1
 
     for img_id, rec in enumerate(
-        (r for r in stream_records(RAW_LABEL_FILES[split]) if r["name"] in wanted), 1
+        (record for record in all_records() if record["name"] in wanted), 1
     ):
         name = rec["name"]
         path = img_dir / name
@@ -58,6 +96,7 @@ def build(split: str) -> dict:
 
         coco_images.append({"id": img_id, "file_name": name, "width": w, "height": h})
         lines = []
+        seen_boxes = set()
 
         for idx, x1, y1, x2, y2 in detection_boxes(rec):
             cx1, cy1 = max(0.0, min(x1, w)), max(0.0, min(y1, h))
@@ -68,6 +107,12 @@ def build(split: str) -> dict:
             if bw < MIN_SIDE or bh < MIN_SIDE:
                 n_dropped += 1
                 continue
+
+            box_key = (idx, cx1, cy1, cx2, cy2)
+            if box_key in seen_boxes:
+                n_duplicates += 1
+                continue
+            seen_boxes.add(box_key)
 
             per_class[DET_CLASSES[idx]] += 1
             lines.append(
@@ -102,6 +147,7 @@ def build(split: str) -> dict:
         "boxes": len(coco_anns),
         "clamped": n_clamped,
         "dropped": n_dropped,
+        "duplicates": n_duplicates,
         "dims": dims,
         "per_class": per_class,
     }
@@ -109,19 +155,21 @@ def build(split: str) -> dict:
 
 def main() -> None:
     stats = {}
-    for split in ("val", "train"):
+    for split in ("train", "val", "test"):
         print(f"=== {split} ===", flush=True)
         s = build(split)
         stats[split] = s
         print(f"  images {s['images']:,}  boxes {s['boxes']:,}"
-              f"  clamped {s['clamped']:,}  dropped {s['dropped']:,}")
+              f"  clamped {s['clamped']:,}  dropped {s['dropped']:,}"
+              f"  duplicates {s['duplicates']:,}")
         print(f"  dimensions: {dict(s['dims'])}")
 
-    print(f"\n{'class':<16}{'train':>10}{'val':>10}")
-    print("-" * 36)
+    print(f"\n{'class':<16}{'train':>10}{'val':>10}{'test':>10}")
+    print("-" * 46)
     for c in DET_CLASSES:
         print(f"{c:<16}{stats['train']['per_class'].get(c, 0):>10,}"
-              f"{stats['val']['per_class'].get(c, 0):>10,}")
+              f"{stats['val']['per_class'].get(c, 0):>10,}"
+              f"{stats['test']['per_class'].get(c, 0):>10,}")
 
 
 if __name__ == "__main__":

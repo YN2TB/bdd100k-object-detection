@@ -1,4 +1,4 @@
-"""CLI: evaluate a COCO-format predictions file against the val ground truth."""
+"""Evaluate COCO-format predictions against the held-out test labels."""
 from __future__ import annotations
 
 import argparse
@@ -11,7 +11,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 from bddcv.constants import DATA_DIR  # noqa: E402
 from bddcv.evaluation import evaluate, format_report  # noqa: E402
 
-DEFAULT_GT = DATA_DIR / "source_daytime_clear" / "annotations" / "instances_val.json"
+DEFAULT_GT = DATA_DIR / "source_full" / "annotations" / "instances_test.json"
 
 if __name__ == "__main__":
     ap = argparse.ArgumentParser()

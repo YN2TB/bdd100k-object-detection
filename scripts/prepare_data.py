@@ -1,173 +1,175 @@
-"""Select the source-domain subset and extract only those images.
+"""Prepare all publicly labelled BDD100K images for train/val/test.
 
-The full daytime+clear pool is 12,454 train / 1,764 val images. That is small
-enough to use in its entirety, so no subsampling seed is involved: the subset
-is fully determined by the attribute filter and is therefore reproducible by
-construction.
-
-Only the selected images are pulled out of archive.zip (~1.2 GB) rather than
-the whole 8 GB archive.
-
-Self-contained: the label JSONs are extracted from the archive automatically if
-they are not already present, so a fresh clone plus a BDD100K archive is enough
-to rebuild the subset. Pass --archive if yours is not at data/archives/archive.zip.
+The official train and validation labels are combined and split deterministically
+into 70% train, 20% validation, and 10% test. Images are symlinked, not copied,
+so the generated view does not duplicate the full dataset.
 """
 from __future__ import annotations
 
 import argparse
+import os
+import random
+import shutil
 import sys
-import time
 import zipfile
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
-from bddcv.constants import (  # noqa: E402
-    ARCHIVE,
-    DATA_DIR,
-    RAW_LABELS_DIR,
-    RAW_LABEL_FILES,
-    SOURCE_TIMEOFDAY,
-    SOURCE_WEATHER,
-    ZIP_IMAGE_PREFIX,
-)
-from bddcv.labels import image_attributes, stream_records  # noqa: E402
+from bddcv.constants import ARCHIVE, DATA_DIR, RAW_LABELS_DIR, RAW_LABEL_FILES  # noqa: E402
+from bddcv.labels import stream_records  # noqa: E402
 
-SUBSET_DIR = DATA_DIR / "source_daytime_clear"
-IMAGES_DIR = SUBSET_DIR / "images"
+DATASET_DIR = DATA_DIR / "source_full"
+DEFAULT_IMAGES_ROOT = (
+    DATA_DIR / "kagglehub/datasets/solesensei/solesensei_bdd100k/versions/2/"
+    "bdd100k/bdd100k/images/100k"
+)
+SEED = 0
+TRAIN_FRACTION = 0.70
+TEST_FRACTION = 0.10
 
 
 def ensure_raw_labels(archive: Path) -> None:
-    """Extract the two label JSONs from the archive if they are missing.
-
-    Located by filename rather than by full path: BDD100K repacks nest the
-    labels directory differently, and hardcoding one layout makes the pipeline
-    fail on an otherwise valid copy of the dataset.
-    """
-    missing = {s: p for s, p in RAW_LABEL_FILES.items() if not p.exists()}
+    """Extract missing raw label JSONs with a bounded, atomic copy."""
+    missing = {split: path for split, path in RAW_LABEL_FILES.items() if not path.exists()}
     if not missing:
         return
-
     if not archive.exists():
         raise SystemExit(
-            f"label JSONs missing ({', '.join(p.name for p in missing.values())}) "
-            f"and no archive at {archive}. Pass --archive /path/to/bdd100k.zip"
+            "raw labels are missing and no archive was found; pass "
+            "--archive /path/to/bdd100k.zip"
         )
 
     RAW_LABELS_DIR.mkdir(parents=True, exist_ok=True)
-    print(f"extracting {len(missing)} label file(s) from {archive.name}", flush=True)
-
     with zipfile.ZipFile(archive) as zf:
-        names = zf.namelist()
-        for split, target in missing.items():
-            matches = [n for n in names if n.endswith(f"/{target.name}") or n == target.name]
-            if not matches:
-                found = [n for n in names if n.endswith(".json")][:10]
-                raise SystemExit(
-                    f"{target.name} not found in {archive.name}.\n"
-                    f"JSON files present: {found or '(none)'}\n"
-                    "This archive may be a different BDD100K release; the legacy "
-                    "'bdd100k_labels_images_*.json' schema is required."
-                )
-            with zf.open(matches[0]) as src, open(target, "wb") as out:
-                out.write(src.read())
-            print(f"  {matches[0]} -> {target}", flush=True)
+        members = zf.namelist()
+        for target in missing.values():
+            matches = [name for name in members if Path(name).name == target.name]
+            if len(matches) != 1:
+                raise SystemExit(f"expected one {target.name} in archive, found {len(matches)}")
+            temporary = target.with_suffix(target.suffix + ".tmp")
+            try:
+                with zf.open(matches[0]) as source, temporary.open("wb") as output:
+                    shutil.copyfileobj(source, output, length=1 << 20)
+                    output.flush()
+                    os.fsync(output.fileno())
+                os.replace(temporary, target)
+            except BaseException:
+                temporary.unlink(missing_ok=True)
+                raise
 
 
-def build_manifest(split: str) -> list[str]:
+def build_manifests() -> dict[str, list[str]]:
+    """Return the fixed full-data split from raw labelled records."""
     names = []
-    for rec in stream_records(RAW_LABEL_FILES[split]):
-        tod, weather = image_attributes(rec)
-        if tod == SOURCE_TIMEOFDAY and weather == SOURCE_WEATHER:
-            names.append(rec["name"])
-    names.sort()  # deterministic order, independent of file order
-    return names
+    for raw_split in ("train", "val"):
+        names.extend(record["name"] for record in stream_records(RAW_LABEL_FILES[raw_split]))
+    if len(names) != len(set(names)):
+        raise SystemExit("official labels contain duplicate filenames")
+
+    random.Random(SEED).shuffle(names)
+    train_size = int(len(names) * TRAIN_FRACTION)
+    test_size = int(len(names) * TEST_FRACTION)
+    return {
+        "train": sorted(names[:train_size]),
+        "val": sorted(names[train_size:-test_size]),
+        "test": sorted(names[-test_size:]),
+    }
 
 
-def build_member_index(zf: zipfile.ZipFile, split: str) -> dict[str, str]:
-    """Map image basename -> archive member, scoped to one split's subtree.
+def reject_manifest_drift(manifests: dict[str, list[str]]) -> None:
+    """Reject changed protected manifests before touching dataset links."""
+    drifted = []
+    for split, names in manifests.items():
+        path = DATASET_DIR / f"{split}_images.txt"
+        expected = "\n".join(names) + "\n"
+        if path.exists() and path.read_text(encoding="utf-8") != expected:
+            drifted.append(path.name)
+    if drifted:
+        raise SystemExit(
+            "regenerated manifest(s) differ from the fixed seed-0 version: "
+            f"{', '.join(drifted)}. No dataset links were changed."
+        )
 
-    This repack does not store train images flat: they are scattered across
-    train/trainA, train/trainB, train/testA, train/testB and train/ itself.
-    Scoping the index to the split subtree keeps the lookup unambiguous
-    without depending on that internal foldering.
-    """
-    prefix = f"{ZIP_IMAGE_PREFIX}/{split}/"
-    index = {}
-    for member in zf.namelist():
-        if member.startswith(prefix) and member.endswith(".jpg"):
-            index[member.rsplit("/", 1)[-1]] = member
+
+def image_index(directory: Path) -> dict[str, Path]:
+    """Index a possibly nested official image split by unique basename."""
+    if not directory.is_dir():
+        raise SystemExit(f"image source directory not found: {directory}")
+    index: dict[str, Path] = {}
+    duplicates = []
+    for path in directory.rglob("*.jpg"):
+        if path.name in index:
+            duplicates.append(path.name)
+        else:
+            index[path.name] = path.resolve()
+    if duplicates:
+        raise SystemExit(f"duplicate image basenames in {directory}: {duplicates[:3]}")
     return index
 
 
-def extract(archive: Path, split: str, names: list[str]) -> tuple[int, int]:
-    dest = IMAGES_DIR / split
-    dest.mkdir(parents=True, exist_ok=True)
+def link_split(split: str, names: list[str], index: dict[str, Path]) -> tuple[int, int]:
+    """Create a manifest-exact symlink view for one logical split."""
+    missing = [name for name in names if name not in index]
+    if missing:
+        raise SystemExit(f"{split} is missing {len(missing)} source images, e.g. {missing[:3]}")
 
-    extracted = skipped = 0
-    t0 = time.time()
-    with zipfile.ZipFile(archive) as zf:
-        index = build_member_index(zf, split)
-        print(f"  archive holds {len(index):,} {split} images", flush=True)
+    destination = DATASET_DIR / "images" / split
+    destination.mkdir(parents=True, exist_ok=True)
+    wanted = set(names)
+    unexpected = [path.name for path in destination.iterdir() if path.name not in wanted]
+    if unexpected:
+        raise SystemExit(
+            f"{split} contains {len(unexpected)} files outside its manifest, "
+            f"e.g. {unexpected[:3]}"
+        )
 
-        missing = [n for n in names if n not in index]
-        if missing:
-            raise SystemExit(
-                f"{len(missing)} images listed in labels are absent from the archive, "
-                f"e.g. {missing[:3]}"
-            )
-
-        for i, name in enumerate(names, 1):
-            target = dest / name
-            if target.exists() and target.stat().st_size > 0:
-                skipped += 1
-            else:
-                with zf.open(index[name]) as src, open(target, "wb") as out:
-                    out.write(src.read())
-                extracted += 1
-            if i % 2000 == 0:
-                rate = i / max(time.time() - t0, 1e-6)
-                print(f"  {split}: {i}/{len(names)}  ({rate:.0f} img/s)", flush=True)
-    return extracted, skipped
+    created = existing = 0
+    for name in names:
+        target = destination / name
+        if target.is_file():
+            existing += 1
+            continue
+        if target.is_symlink():
+            raise SystemExit(f"broken dataset symlink: {target}")
+        target.symlink_to(index[name])
+        created += 1
+    return created, existing
 
 
 def main() -> None:
-    ap = argparse.ArgumentParser()
-    ap.add_argument("--archive", type=Path, default=ARCHIVE,
-                    help=f"BDD100K zip (default: {ARCHIVE})")
-    args = ap.parse_args()
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--images-root", type=Path, default=DEFAULT_IMAGES_ROOT)
+    parser.add_argument("--archive", type=Path, default=ARCHIVE)
+    args = parser.parse_args()
 
     ensure_raw_labels(args.archive)
+    manifests = build_manifests()
+    reject_manifest_drift(manifests)
 
-    SUBSET_DIR.mkdir(parents=True, exist_ok=True)
-    drifted = []
-    for split in ("val", "train"):
-        print(f"\n=== {split} ===", flush=True)
-        names = build_manifest(split)
-        manifest = SUBSET_DIR / f"{split}_images.txt"
-        content = "\n".join(names) + "\n"
+    train_index = image_index(args.images_root / "train")
+    official_val_index = image_index(args.images_root / "val")
+    overlap = set(train_index) & set(official_val_index)
+    if overlap:
+        raise SystemExit(f"official image splits overlap, e.g. {sorted(overlap)[:3]}")
+    full_index = {**train_index, **official_val_index}
+    indexes = {split: full_index for split in manifests}
 
-        # The manifests are tracked in git as the reproducibility record. If a
-        # regenerated one differs, this archive selects a different subset and
-        # any model trained on it is not comparable with the others.
-        if manifest.exists() and manifest.read_text(encoding="utf-8") != content:
-            drifted.append(manifest.name)
+    # Validate all source coverage before writing manifests or links.
+    for split, names in manifests.items():
+        missing = [name for name in names if name not in indexes[split]]
+        if missing:
+            raise SystemExit(
+                f"{split} is missing {len(missing)} source images, e.g. {missing[:3]}"
+            )
 
-        manifest.write_text(content, encoding="utf-8")
-        print(f"  manifest: {len(names):,} images -> {manifest.name}", flush=True)
-
-        extracted, skipped = extract(args.archive, split, names)
-        print(f"  extracted {extracted:,}, already present {skipped:,}")
-
-    if drifted:
-        print(
-            f"\n*** WARNING: regenerated manifest(s) differ from the committed "
-            f"version: {', '.join(drifted)}\n"
-            "*** This archive selects a different image subset. A model trained "
-            "on it is NOT comparable with models trained elsewhere.\n"
-            "*** Run `git diff data/source_daytime_clear/` and resolve before training."
-        )
-    print("\ndone")
+    DATASET_DIR.mkdir(parents=True, exist_ok=True)
+    for split, names in manifests.items():
+        manifest = DATASET_DIR / f"{split}_images.txt"
+        if not manifest.exists():
+            manifest.write_text("\n".join(names) + "\n", encoding="utf-8")
+        created, existing = link_split(split, names, indexes[split])
+        print(f"{split}: {len(names):,} images ({created:,} linked, {existing:,} existing)")
 
 
 if __name__ == "__main__":

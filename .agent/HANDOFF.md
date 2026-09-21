@@ -2,6 +2,21 @@
 
 Updated: 2026-09-15
 
+## 2026-09-21: portable full-data path repair
+
+The repository was moved from `Quocdat/CV` to `Quocdat/deep learning`, leaving
+all 79,863 `data/source_full/images/{train,val,test}` symlinks broken and the
+dataset YAML tied to the old absolute location. The broken links were replaced
+from the existing `data/kagglehub` raw images without changing manifests,
+labels, annotations, or experiment artifacts. Final counts are 55,904 train,
+15,973 validation, and 7,986 test links, with zero broken links.
+
+`configs/bdd_source.yaml` now uses portable `path: data/source_full`.
+`prepare_ultralytics()` anchors Ultralytics' dataset root to `PROJECT_ROOT`, and
+the dataset fingerprint resolver uses the same convention. Resolution was
+verified from `/tmp`, the full main test suite passed 100 tests with one expected
+RF-DETR-environment skip, compilation passed, and `git diff --check` passed.
+
 ## Completed checkpoint: full BDD100K retraining
 
 The user superseded the fixed daytime/clear scope and explicitly authorized a

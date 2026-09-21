@@ -12,7 +12,13 @@ from typing import Any, Mapping
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
-from bddcv.paths import DATA_CONFIG, TRAIN_DIR, prepare_ultralytics, resolve_output  # noqa: E402
+from bddcv.paths import (  # noqa: E402
+    DATA_CONFIG,
+    PROJECT_ROOT,
+    TRAIN_DIR,
+    prepare_ultralytics,
+    resolve_output,
+)
 from bddcv.checkpointing import (  # noqa: E402
     dataset_fingerprint,
     reconcile_results_csv,
@@ -31,10 +37,10 @@ RESUME_METADATA_KEYS = (
 RESUME_CHECKPOINT_KEYS = ("epochs", "batch", "imgsz", "workers", "seed")
 
 
-def _resolve_dataset_path(value: str | Path, config_path: Path) -> Path:
+def _resolve_dataset_path(value: str | Path, base_dir: Path) -> Path:
     path = Path(str(value)).expanduser()
     if not path.is_absolute():
-        path = config_path.parent / path
+        path = base_dir / path
     return path.resolve()
 
 
@@ -49,7 +55,7 @@ def _dataset_files(config_path: Path) -> tuple[Path, list[Path]]:
     payload = yaml.safe_load(config_path.read_text(encoding="utf-8"))
     if not isinstance(payload, Mapping) or not payload.get("path"):
         raise ValueError(f"dataset config has no path: {config_path}")
-    subset = _resolve_dataset_path(payload["path"], config_path)
+    subset = _resolve_dataset_path(payload["path"], PROJECT_ROOT)
     files = [config_path]
     for split in ("train", "val"):
         configured = payload.get(split)

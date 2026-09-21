@@ -37,7 +37,8 @@ python -m pip install ultralytics pycocotools \
   -c constraints.txt --extra-index-url https://download.pytorch.org/whl/cu128
 ```
 
-Sửa trường `path` trong `configs/bdd_source.yaml` nếu project nằm ở vị trí khác.
+`configs/bdd_source.yaml` dùng đường dẫn tương đối `data/source_full`, nên không
+cần sửa đường dẫn sau khi clone project sang vị trí khác.
 
 ## Pipeline 5 bước
 

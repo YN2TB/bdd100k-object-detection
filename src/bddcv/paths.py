@@ -51,11 +51,14 @@ def prepare_ultralytics() -> None:
     """Initialize project settings before model/AMP construction."""
     prepare_runtime()
     import ultralytics.utils as utils
+    import ultralytics.data.utils as data_utils
 
     utils.SETTINGS.update({"weights_dir": str(WEIGHTS_DIR), "runs_dir": str(RUNS_DIR),
-                           "datasets_dir": str(DATA_DIR / "downloads")})
+                           "datasets_dir": str(PROJECT_ROOT)})
     # Ultralytics snapshots this setting at import; AMP reads the snapshot.
     utils.WEIGHTS_DIR = WEIGHTS_DIR
+    utils.DATASETS_DIR = PROJECT_ROOT
+    data_utils.DATASETS_DIR = PROJECT_ROOT
 
 
 def prepare_rfdetr_runtime() -> None:

@@ -1,7 +1,8 @@
 # BDD100K Object Detection
 
-Project giữa kỳ nhận diện và định vị vật thể giao thông bằng bounding box. Ba
-mô hình được so sánh trên cùng dữ liệu, split và COCO evaluator:
+Bài giữa kỳ môn **Deep Learning**, chủ đề **đọc ảnh**: nhận diện và định vị vật
+thể giao thông bằng bounding box. Ba mô hình được so sánh trên cùng dữ liệu,
+split và COCO evaluator:
 
 | Mô hình | Vai trò | Số tham số |
 |---|---|---:|

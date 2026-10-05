@@ -18,12 +18,13 @@
 
 ## Active
 
-- [2026-09-08: six-model profiling and RTX 3060 optimization](plans/active/2026-09-08-six-model-profiling.md)
-  — implementation, profiling, smoke/resume, production training, and centralized
-  evaluation complete; final independent review remains outstanding.
+None.
 
 ## Archive
 
+- [2026-09-08: six-model profiling and RTX 3060 optimization](plans/archive/2026-09-08-six-model-profiling.md)
+  — historical; trained and ranked on the daytime/clear subset, then superseded
+  by the full-data three-model experiment. Final review intentionally not pursued.
 - [2026-09-08: artifact layout](plans/archive/2026-09-08-artifact-layout.md) — completed;
   detailed README, migration and regression verification.
 - [2026-09-14: midterm pipeline simplification](plans/archive/2026-09-14-midterm-pipeline-simplification.md)

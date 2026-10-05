@@ -1,7 +1,12 @@
 # Six-model profiling and RTX 3060 optimization plan
 
-Status: profiling, smoke/resume, production training, and centralized evaluation
-complete; final independent review pending.
+Status: archived as historical on 2026-10-05. Profiling, smoke/resume, production
+training, and centralized evaluation completed on the daytime/clear subset. The
+final independent review and the RESUME-1, RESUME-2, and REPRO-1 runtime
+acceptance items were never completed. They were dropped rather than finished
+because the 2026-09-14 full-data experiment superseded this roster. The current
+report contains only `simple-cnn`, `complex-cnn`, and `yolo11s`. Results from
+this plan stay in `docs/model-ranking.md` as historical context.
 
 ## Goal
 

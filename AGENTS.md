@@ -2,7 +2,8 @@
 
 ## Project Structure & Module Organization
 
-This Python midterm compares two hand-written CNN object detectors with a YOLO11s
+This is a Python midterm for a Deep Learning course; its topic is image reading
+(đọc ảnh). It compares two hand-written CNN object detectors with a YOLO11s
 baseline on all publicly labelled BDD100K images.
 
 - `src/bddcv/`: class definitions, label readers, custom CNN detectors, and COCO evaluation.

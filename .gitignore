@@ -33,6 +33,10 @@ runs/profile/
 weights/
 *.pt
 
+# Course assignment documents (requirements, report drafts) stay local
+docs/*.docx
+~$*.docx
+
 # Python
 __pycache__/
 *.py[cod]
